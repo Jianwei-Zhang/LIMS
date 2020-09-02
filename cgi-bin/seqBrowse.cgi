@@ -3,6 +3,7 @@ use strict;
 use CGI qw(:standard);
 use CGI::Carp qw ( fatalsToBrowser );
 use JSON::XS; #JSON::XS is recommended to be installed for handling JSON string of big size
+use Bio::SeqIO;
 use DBI;
 use SVG;
 use lib "lib/";
@@ -50,19 +51,9 @@ if ($seqId)
 	my $refSequence=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 	$refSequence->execute($seqId);
 	my @refSequence = $refSequence->fetchrow_array();
-# 	$refSequence[8] =~ s/"sequence":"(.*?)",//g; #here is the trick, to get sequence from JSON string in case of sequence is too long to effect decode_json
-# 	my $refSequenceDetails = decode_json $refSequence[8];
-# 	$refSequenceDetails->{'id'} = '' unless (exists $refSequenceDetails->{'id'});
-# 	$refSequenceDetails->{'description'} = '' unless (exists $refSequenceDetails->{'description'});
-# 	$refSequenceDetails->{'sequence'} = $1 unless (exists $refSequenceDetails->{'sequence'});
-#	$refSequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.
-# 	$refSequenceDetails->{'gapList'} = '' unless (exists $refSequenceDetails->{'gapList'});
-
 	my $refSequenceDetails = decode_json $refSequence[8];
 	$refSequenceDetails->{'id'} = '' unless (exists $refSequenceDetails->{'id'});
 	$refSequenceDetails->{'description'} = '' unless (exists $refSequenceDetails->{'description'});
-	$refSequenceDetails->{'sequence'} = '' unless (exists $refSequenceDetails->{'sequence'});
-	$refSequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.
 	$refSequenceDetails->{'gapList'} = '' unless (exists $refSequenceDetails->{'gapList'});
 	$refSequenceDetails->{'filter'} = '' unless (exists $refSequenceDetails->{'filter'});
 	my $totalSeqs = 0;

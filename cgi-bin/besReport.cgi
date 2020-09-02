@@ -46,8 +46,6 @@ if(param ('libraryId'))
 			my $refSequenceDetails = decode_json $refSequence[8];
 			$refSequenceDetails->{'id'} = '' unless (exists $refSequenceDetails->{'id'});
 			$refSequenceDetails->{'description'} = '' unless (exists $refSequenceDetails->{'description'});
-			$refSequenceDetails->{'sequence'} = '' unless (exists $refSequenceDetails->{'sequence'});
-			$refSequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 			$refSequenceDetails->{'gapList'} = '' unless (exists $refSequenceDetails->{'gapList'});
 			$refSequenceDetails->{'filter'} = '' unless (exists $refSequenceDetails->{'filter'});
 			my $besLeftPosition;
@@ -120,11 +118,7 @@ if(param ('libraryId'))
 		my $sequenceDetails = decode_json $getSequences[8];
 		$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 		$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-		$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-		$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 		$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
-		$sequenceDetails->{'sequence'} =~ s/[^a-zA-Z0-9]//g;
-		$sequenceDetails->{'sequence'} = multiLineSeq($sequenceDetails->{'sequence'},80);
 		$besClone->{$getSequences[2]} .= "$seqDir{$getSequences[6]}:$getSequences[5] ";
 		$paredBes->{$getSequences[2]} .= $seqDir{$getSequences[6]};
 		$singleEndCount->{$seqDir{$getSequences[6]}}++;

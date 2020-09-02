@@ -2,9 +2,9 @@
 use strict;
 use CGI qw(:standard);
 use CGI::Carp qw ( fatalsToBrowser ); 
-use Bio::SeqIO;
 use LWP::Simple qw/getstore/;
 use JSON::XS; #JSON::XS is recommended to be installed for handling JSON string of big size 
+use Bio::SeqIO;
 use DBI;
 use lib "lib/";
 use lib "lib/pangu";
@@ -25,6 +25,7 @@ my $commoncfg = readConfig("main.conf");
 my $config = new config;
 my $JOBURL = $config->getFieldValueWithFieldName("JOBURL");
 my $JOBREALTIME = $config->getFieldValueWithFieldName("JOBREALTIME");
+my $json = JSON::XS->new->allow_nonref;
 
 my $blastn = 'blast+/bin/blastn';
 my $jobdir = $commoncfg->{JOBDIR};
@@ -83,9 +84,10 @@ elsif($pid == 0){
 		}
 		close(VECTOR);
 	}
-
+	
 	foreach my $input (sort {$a <=> $b} @jobId)
 	{
+		my @allSequenceId;
 		my $outdir = "$jobdir/$input";
 		unless (-e $outdir)
 		{
@@ -143,16 +145,20 @@ elsif($pid == 0){
 			$seqDetails->{'sequence'} = $seq->seq;
 			$seqDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.
 			$seqDetails->{'gapList'} = '';
-			my $json = JSON::XS->new->allow_nonref;
 			$seqDetails = $json->encode($seqDetails);
 			my $insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', ? , 0, ?, ?, 0, 0, ?, ?, NOW())");
 			$insertSequence->execute($seq->id(),$input,$seqLength,$seqDetails,$userName);
+			my $rawSequenceId = $dbh->{mysql_insertid};
+			push @allSequenceId,$rawSequenceId;
+
 
 			if($seqLength < $shortCutoff)
 			{
 				#ignore short sequences (type-8)
 				$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 8, ?, ?, 0, 0, ?, ?, NOW())");
 				$insertSequence->execute($input,$seqLength,$seqDetails,$userName);
+				my $shortSequenceId = $dbh->{mysql_insertid};
+				push @allSequenceId,$shortSequenceId;
 				$sequence = ">" . $seq->id() . "\n" . $seq->seq() ."\n";
 				open (SHORT,">>$outdir/$input.short") or die "can't open file: $outdir/$input.short";
 				print SHORT $sequence;
@@ -267,6 +273,9 @@ elsif($pid == 0){
 							#no vector(type-3)
 							$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 3, ?, ?, 0, 0, ?, ?, NOW())");
 							$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+							my $novectorSequenceId = $dbh->{mysql_insertid};
+							push @allSequenceId,$novectorSequenceId;
+
 							open (NOVECTOR,">>$outdir/$input.noVector") or die "can't open file: $outdir/$input.noVector";
 							print NOVECTOR $sequence;
 							close(NOVECTOR);
@@ -278,6 +287,8 @@ elsif($pid == 0){
 							#vector or mixer(type-6)
 							$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 6, ?, ?, 0, 0, ?, ?, NOW())");
 							$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+							my $vectorSequenceId = $dbh->{mysql_insertid};
+							push @allSequenceId,$vectorSequenceId;
 
 							open (VECTOR,">>$outdir/$input.vector") or die "can't open file: $outdir/$input.vector";
 							print VECTOR $sequence;
@@ -303,6 +314,9 @@ elsif($pid == 0){
 							#vector or mixer(type-6)
 							$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 6, ?, ?, 0, 0, ?, ?, NOW())");
 							$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+							my $vectorSequenceId = $dbh->{mysql_insertid};
+							push @allSequenceId,$vectorSequenceId;
+
 							open (VECTOR,">>$outdir/$input.vector") or die "can't open file: $outdir/$input.vector";
 							print VECTOR $sequence;
 							close(VECTOR);					
@@ -314,6 +328,9 @@ elsif($pid == 0){
 							#vector(type-6)
 							$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 6, ?, ?, 0, 0, ?, ?, NOW())");
 							$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+							my $vectorSequenceId = $dbh->{mysql_insertid};
+							push @allSequenceId,$vectorSequenceId;
+
 							open (VECTOR,">>$outdir/$input.vector") or die "can't open file: $outdir/$input.vector";
 							print VECTOR $sequence;
 							close(VECTOR);					
@@ -325,6 +342,9 @@ elsif($pid == 0){
 							#mixer (type-7)
 							$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 7, ?, ?, 0, 0, ?, ?, NOW())");
 							$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+							my $mixerSequenceId = $dbh->{mysql_insertid};
+							push @allSequenceId,$mixerSequenceId;
+
 							open (PARTIAL,">>$outdir/$input.partial") or die "can't open file: $outdir/$input.partial";
 							print PARTIAL $sequence;
 							close(PARTIAL);					
@@ -349,6 +369,9 @@ elsif($pid == 0){
 							#mixer (type-7)
 							$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 7, ?, ?, 0, 0, ?, ?, NOW())");
 							$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+							my $mixerSequenceId = $dbh->{mysql_insertid};
+							push @allSequenceId,$mixerSequenceId;
+
 							open (PARTIAL,">>$outdir/$input.partial") or die "can't open file: $outdir/$input.partial";
 							print PARTIAL $sequence;
 							close(PARTIAL);
@@ -363,6 +386,9 @@ elsif($pid == 0){
 								#ignore short sequences (type-8)
 								$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 8, ?, ?, 0, 0, ?, ?, NOW())");
 								$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+								my $shortSequenceId = $dbh->{mysql_insertid};
+								push @allSequenceId,$shortSequenceId;
+
 								open (SHORT,">>$outdir/$input.short") or die "can't open file: $outdir/$input.short";
 								print SHORT $sequence;
 								close(SHORT);
@@ -374,6 +400,9 @@ elsif($pid == 0){
 								#good insert sequence (type-1)
 								$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 1, ?, ?, 0, 0, ?, ?, NOW())");
 								$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+								my $goodSequenceId = $dbh->{mysql_insertid};
+								push @allSequenceId,$goodSequenceId;
+
 								print CLEAN $sequence;
 								print LOG $seq->id() . "\t$pieceLeftPosition\t$_\tInsert\tInsertEnd-InsertEnd\n";
 								$count->{"Insert"}++;
@@ -447,6 +476,9 @@ elsif($pid == 0){
 							$sequenceDetails = $json->encode($sequenceDetails);
 							$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 2, ?, ?, 0, 0, ?, ?, NOW())");
 							$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+							my $goodSequenceId = $dbh->{mysql_insertid};
+							push @allSequenceId,$goodSequenceId;
+
 							$sequence = ">" . $seq->id() ." ($subSeqAStart-$subSeqARight,Overlap:$overlapLength-$overlapIdentities)\n" . $seq->subseq($subSeqAStart, $subSeqARight) ."\n";
 							print CLEAN $sequence;
 							print LOG $seq->id() . "\t$subSeqAStart\t$subSeqARight\tCircularized\tsubSeqA only(Overlap:$overlapLength,$overlapIdentities)\n";
@@ -471,6 +503,9 @@ elsif($pid == 0){
 							$sequenceDetails = $json->encode($sequenceDetails);
 							$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 2, ?, ?, 0, 0, ?, ?, NOW())");
 							$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+							my $goodSequenceId = $dbh->{mysql_insertid};
+							push @allSequenceId,$goodSequenceId;
+
 							$sequence = ">" . $seq->id() ." ($subSeqBLeft-$subSeqBEnd,$subSeqAStart-$subSeqARight,Overlap:$overlapLength-$overlapIdentities)\n" . $seq->subseq($subSeqBLeft, $subSeqBEnd) ."\n". $seq->subseq($subSeqAStart, $subSeqARight) ."\n";
 							print CLEAN $sequence;
 							print LOG $seq->id() . "\t$subSeqBLeft-$subSeqBEnd\t$subSeqAStart-$subSeqARight\tCircularized\tsubSeqB-subSeqA(Overlap:$overlapLength,$overlapIdentities)\n";
@@ -493,6 +528,9 @@ elsif($pid == 0){
 							$sequenceDetailsA = $json->encode($sequenceDetailsA);
 							$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 5, ?, ?, 0, 0, ?, ?, NOW())");
 							$insertSequence->execute($input,$seqLength,$sequenceDetailsA,$userName);
+							my $partialSequenceIdA = $dbh->{mysql_insertid};
+							push @allSequenceId,$partialSequenceIdA;
+
 							$sequence = ">" . $seq->id() . " ($subSeqALeft-$subSeqARight)\n" . $seq->subseq($subSeqALeft,$subSeqARight) ."\n";
 							print PARTIAL $sequence;
 
@@ -507,6 +545,9 @@ elsif($pid == 0){
 							$sequenceDetailsB = $json->encode($sequenceDetailsB);
 							$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 5, ?, ?, 0, 0, ?, ?, NOW())");
 							$insertSequence->execute($input,$seqLength,$sequenceDetailsB,$userName);
+							my $partialSequenceIdB = $dbh->{mysql_insertid};
+							push @allSequenceId,$partialSequenceIdB;
+
 							$sequence = ">" . $seq->id() . " ($subSeqBLeft-$subSeqBRight)\n" . $seq->subseq($subSeqBLeft,$subSeqBRight) ."\n";
 							print PARTIAL $sequence;
 							close(PARTIAL);
@@ -534,6 +575,9 @@ elsif($pid == 0){
 								#ignore short sequences (type-8)
 								$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 8, ?, ?, 0, 0, ?, ?, NOW())");
 								$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+								my $shortSequenceId = $dbh->{mysql_insertid};
+								push @allSequenceId,$shortSequenceId;
+
 								$sequence = ">" . $seq->id(). " (subSeqB:$subSeqBLeft-$subSeqBRight,100Ns,subSeqA:$subSeqALeft-$subSeqARight)\n" .
 											$seq->subseq($subSeqBLeft,$subSeqBRight) . "N" x 100 . $seq->subseq($subSeqALeft,$subSeqARight) ."\n";
 								open (SHORT,">>$outdir/$input.short") or die "can't open file: $outdir/$input.short";
@@ -546,6 +590,9 @@ elsif($pid == 0){
 							{
 								$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 4, ?, ?, 0, 0, ?, ?, NOW())");
 								$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+								my $gapSequenceId = $dbh->{mysql_insertid};
+								push @allSequenceId,$gapSequenceId;
+
 								$sequence = ">" . $seq->id(). " (subSeqB:$subSeqBLeft-$subSeqBRight,100Ns,subSeqA:$subSeqALeft-$subSeqARight)\n" .
 											$seq->subseq($subSeqBLeft,$subSeqBRight) . "N" x 100 . $seq->subseq($subSeqALeft,$subSeqARight) ."\n";
 								open (GAPPED,">>$outdir/$input.gapped") or die "can't open file: $outdir/$input.gapped";
@@ -570,6 +617,9 @@ elsif($pid == 0){
 					$sequenceDetails = $json->encode($sequenceDetails);
 					$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 5, ?, ?, 0, 0, ?, ?, NOW())");
 					$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+					my $partialSequenceId = $dbh->{mysql_insertid};
+					push @allSequenceId,$partialSequenceId;
+
 					$sequence = ">" . $seq->id() . " ($subSeqALeft-$subSeqARight)\n" . $seq->subseq($subSeqALeft,$subSeqARight) ."\n";
 					open (PARTIAL,">>$outdir/$input.partial") or die "can't open file: $outdir/$input.partial";
 					print PARTIAL $sequence;
@@ -593,6 +643,9 @@ elsif($pid == 0){
 					$sequenceDetails = $json->encode($sequenceDetails);
 					$insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', '', 5, ?, ?, 0, 0, ?, ?, NOW())");
 					$insertSequence->execute($input,$seqLength,$sequenceDetails,$userName);
+					my $partialSequenceId = $dbh->{mysql_insertid};
+					push @allSequenceId,$partialSequenceId;
+
 					$sequence = ">" . $seq->id() . " ($subSeqBLeft-$subSeqBRight)\n" . $seq->subseq($subSeqBLeft,$subSeqBRight) ."\n";
 					open (PARTIAL,">>$outdir/$input.partial") or die "can't open file: $outdir/$input.partial";
 					print PARTIAL $sequence;
@@ -622,6 +675,52 @@ elsif($pid == 0){
 		}
 		print ALLLOG "\n";
 		close(ALLLOG);		
+
+		foreach (@allSequenceId)
+		{
+			my $getSequences = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+			$getSequences->execute($_);
+			while(my @getSequences = $getSequences->fetchrow_array())
+			{
+				my $sequenceDetails = decode_json $getSequences[8];
+				$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
+				my $seqDir;
+				for (my $position = 0; $position < length($getSequences[4]); $position += 2)
+				{
+					$seqDir .= "/g". substr($getSequences[4],$position,2);
+					until (-e "$commoncfg->{DATADIR}/sequences$seqDir")
+					{
+						mkdir "$commoncfg->{DATADIR}/sequences$seqDir";
+					}
+				}
+
+				my $seqFile;
+				for (my $position = 0; $position < length($getSequences[0]); $position += 2)
+				{
+					$seqFile .= "/s". substr($getSequences[0],$position,2);
+					if (length ($seqFile) % 4 == 0)
+					{
+						until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile")
+						{
+							mkdir "$commoncfg->{DATADIR}/sequences$seqDir$seqFile";
+						}
+					}
+				}
+
+				until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa")
+				{
+					open (SEQ,">$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa") or die "can't open file: $commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa";
+					print SEQ ">$getSequences[0]\n";
+					print SEQ &multiLineSeq($sequenceDetails->{'sequence'},80);
+					close(SEQ);
+				}
+
+				$sequenceDetails->{'sequence'} = "sequences$seqDir$seqFile.fa";
+				my $seqDetailsEncoded = $json->encode($sequenceDetails);
+				my $updateSequence = $dbh->prepare("UPDATE matrix SET note = ? WHERE id = ?");
+				$updateSequence->execute($seqDetailsEncoded,$getSequences[0]);
+			}
+		}
 
 		#associate BAC and sequence
 		my $assignedSequenceNumber = 0;
@@ -657,9 +756,14 @@ elsif($pid == 0){
 					$cloneBesNumber->{$cloneToBes[2]}++;
 					$besTotalNumber++;
 					my $sequenceDetails = decode_json $cloneToBes[8];
-					$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-					next unless ($sequenceDetails->{'sequence'});
-					print BES ">$cloneToBes[2].$cloneToBes[6]\n$sequenceDetails->{'sequence'}\n";						
+					my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+					my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+											-format => 'Fasta');
+					while ( my $seq = $in->next_seq() )
+					{
+						$sequence = $seq->seq;
+					}
+					print BES ">$cloneToBes[2].$cloneToBes[6]\n$sequence\n";						
 				}			
 			}
 			close (BES);
@@ -678,11 +782,15 @@ elsif($pid == 0){
 			{
 				my $bacIdAssigned = 0;
 				my $sequenceDetails = decode_json $jobToSequence[8];
-				$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-				$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.
-				next unless ($sequenceDetails->{'sequence'});
+				my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+				my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+										-format => 'Fasta');
+				while ( my $seq = $in->next_seq() )
+				{
+					$sequence = $seq->seq;
+				}
 				open (SEQ,">$commoncfg->{TMPDIR}/$jobToSequence[0].seq") or die "can't open file: $commoncfg->{TMPDIR}/$jobToSequence[0].seq";
-				print SEQ ">$jobToSequence[0]\n$sequenceDetails->{'sequence'}";
+				print SEQ ">$jobToSequence[0]\n$sequence";
 				close (SEQ);
 				if($tagTotalNumber > 0)
 				{
@@ -849,6 +957,7 @@ elsif($pid == 0){
 		my $updateJobBacAssigned=$dbh->do("UPDATE matrix SET barcode = $assignedSequenceNumber WHERE container LIKE 'job' AND name LIKE '$input'");
 		close(LOG);	
 	}
+
 	if(@vectorId)
 	{
 		unlink ("$commoncfg->{TMPDIR}/$$.vector");

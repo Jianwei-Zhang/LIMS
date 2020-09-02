@@ -3,6 +3,7 @@ use strict;
 use CGI qw(:standard);
 use CGI::Carp qw ( fatalsToBrowser ); 
 use JSON::XS; #JSON::XS is recommended to be installed for handling JSON string of big size 
+use Bio::SeqIO;
 use DBI;
 use lib "lib/";
 use lib "lib/pangu";
@@ -56,13 +57,17 @@ if (param ('seqId'))
 	my $sequenceDetails = decode_json $getSequences[8];
 	$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 	$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-	$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-	$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 	$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
 	$getSequences[2] = $getSequences[0] unless ($getSequences[2]);
-	$sequenceDetails->{'sequence'} =~ s/[^a-zA-Z0-9]//g;
-	$sequenceDetails->{'sequence'} = multiLineSeq($sequenceDetails->{'sequence'},80);
-	print ">$getSequences[0]-$getSequences[4]-$getSequences[2]-$seqType{$getSequences[3]}-$getSequences[6] $getSequences[5] bp $sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequenceDetails->{'sequence'}";
+	my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+	my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+							-format => 'Fasta');
+	while ( my $seq = $in->next_seq() )
+	{
+		$sequence = $seq->seq;
+	}
+	$sequence = multiLineSeq($sequence,80);
+	print ">$getSequences[0]-$getSequences[4]-$getSequences[2]-$seqType{$getSequences[3]}-$getSequences[6] $getSequences[5] bp $sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequence";
 }
 elsif (param ('jobId'))
 {
@@ -102,13 +107,17 @@ elsif (param ('jobId'))
 		my $sequenceDetails = decode_json $getSequences[8];
 		$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 		$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-		$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-		$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 		$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
 		$getSequences[2] = $getSequences[0] unless ($getSequences[2]);
-		$sequenceDetails->{'sequence'} =~ s/[^a-zA-Z0-9]//g;
-		$sequenceDetails->{'sequence'} = multiLineSeq($sequenceDetails->{'sequence'},80);
-		print ">$getSequences[0]-$getSequences[4]-$getSequences[2]-$seqType{$getSequences[3]}-$getSequences[6] $getSequences[5] bp $sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequenceDetails->{'sequence'}";
+		my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+		my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+								-format => 'Fasta');
+		while ( my $seq = $in->next_seq() )
+		{
+			$sequence = $seq->seq;
+		}
+		$sequence = multiLineSeq($sequence,80);
+		print ">$getSequences[0]-$getSequences[4]-$getSequences[2]-$seqType{$getSequences[3]}-$getSequences[6] $getSequences[5] bp $sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequence";
 	}		
 }
 elsif (param ('agpId'))
@@ -147,18 +156,23 @@ elsif (param ('genomeId'))
 		my $sequenceDetails = decode_json $getSequences[8];
 		$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 		$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-		$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-		$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 		$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
-		$sequenceDetails->{'sequence'} =~ s/[^a-zA-Z0-9]//g;
-		$sequenceDetails->{'sequence'} = multiLineSeq($sequenceDetails->{'sequence'},80);
+		my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+		my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+								-format => 'Fasta');
+		while ( my $seq = $in->next_seq() )
+		{
+			$sequence = $seq->seq;
+		}
+		$sequence = multiLineSeq($sequence,80);
+
 		if($sequenceDetails->{'id'} eq $getSequences[2])
 		{
-			print ">$sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequenceDetails->{'sequence'}";
+			print ">$sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequence";
 		}
 		else
 		{
-			print ">$sequenceDetails->{'id'} $getSequences[2] $sequenceDetails->{'description'}\n$sequenceDetails->{'sequence'}";
+			print ">$sequenceDetails->{'id'} $getSequences[2] $sequenceDetails->{'description'}\n$sequence";
 		}
 	}		
 }
@@ -188,12 +202,16 @@ elsif(param ('libraryId'))
 			my $sequenceDetails = decode_json $getSequences[8];
 			$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 			$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-			$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-			$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 			$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
-			$sequenceDetails->{'sequence'} =~ s/[^a-zA-Z0-9]//g;
-			$sequenceDetails->{'sequence'} = multiLineSeq($sequenceDetails->{'sequence'},80);
-			print ">$getSequences[0]-$getSequences[4]-$getClones[1]-$getSequences[2]-$seqType{$getSequences[3]}-$getSequences[6] $getSequences[5] bp $sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequenceDetails->{'sequence'}";
+			my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+			my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+									-format => 'Fasta');
+			while ( my $seq = $in->next_seq() )
+			{
+				$sequence = $seq->seq;
+			}
+			$sequence = multiLineSeq($sequence,80);
+			print ">$getSequences[0]-$getSequences[4]-$getClones[1]-$getSequences[2]-$seqType{$getSequences[3]}-$getSequences[6] $getSequences[5] bp $sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequence";
 		}		
 	}
 }
@@ -278,12 +296,16 @@ elsif(param ('besLibraryId'))
 		my $sequenceDetails = decode_json $getSequences[8];
 		$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 		$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-		$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-		$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 		$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
-		$sequenceDetails->{'sequence'} =~ s/[^a-zA-Z0-9]//g;
-		$sequenceDetails->{'sequence'} = multiLineSeq($sequenceDetails->{'sequence'},80);
-		print ">$getSequences[0]-$getSequences[4]-$seqType{$getSequences[3]}-$getSequences[2].$seqDir{$getSequences[6]} $getSequences[5] bp $sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequenceDetails->{'sequence'}";
+		my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+		my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+								-format => 'Fasta');
+		while ( my $seq = $in->next_seq() )
+		{
+			$sequence = $seq->seq;
+		}
+		$sequence = multiLineSeq($sequence,80);
+		print ">$getSequences[0]-$getSequences[4]-$seqType{$getSequences[3]}-$getSequences[2].$seqDir{$getSequences[6]} $getSequences[5] bp $sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequence";
 	}		
 }
 elsif(param ('cloneLibraryId'))
@@ -393,11 +415,15 @@ elsif(param ('assemblyCtgId'))
 			my $sequenceDetails = decode_json $assemblySequence[8];
 			$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 			$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-			$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-			$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 			$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
 			$sequenceDetails->{'filter'} = '' unless (exists $sequenceDetails->{'filter'});
-			$sequenceDetails->{'sequence'} =~ s/[^a-zA-Z0-9]//g;
+			my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+			my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+									-format => 'Fasta');
+			while ( my $seq = $in->next_seq() )
+			{
+				$sequence = $seq->seq;
+			}
 
 			if($ctgSequence)
 			{
@@ -466,17 +492,17 @@ elsif(param ('assemblyCtgId'))
 				}
 				for my $position(@position)
 				{
-					my $sequence = substr($sequenceDetails->{'sequence'}, $position->[0] - 1, $position->[1] - $position->[0] + 1);		
-					$sequence = reverseComplement($sequence) if($assemblySeq[7] < 0);
-					$ctgSequence .= $sequence;
+					my $subSequence = substr($sequence, $position->[0] - 1, $position->[1] - $position->[0] + 1);		
+					$subSequence = reverseComplement($subSequence) if($assemblySeq[7] < 0);
+					$ctgSequence .= $subSequence;
 					$lastComponentType = 'D';
 				}
 			}
 			else
 			{
-				my $sequence = substr($sequenceDetails->{'sequence'}, $assemblySeqStart - 1, $assemblySeqEnd - $assemblySeqStart + 1);		
-				$sequence = reverseComplement($sequence) if($assemblySeq[7] < 0);
-				$ctgSequence .= $sequence;
+				my $subSequence = substr($sequence, $assemblySeqStart - 1, $assemblySeqEnd - $assemblySeqStart + 1);		
+				$subSequence = reverseComplement($subSequence) if($assemblySeq[7] < 0);
+				$ctgSequence .= $subSequence;
 				$lastComponentType = 'D';
 			}
 
@@ -504,13 +530,17 @@ elsif(param ('assemblyCtgId'))
 			my $sequenceDetails = decode_json $assemblySequence[8];
 			$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 			$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-			$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-			$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 			$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
 			$sequenceDetails->{'filter'} = '' unless (exists $sequenceDetails->{'filter'});
-			$sequenceDetails->{'sequence'} =~ s/[^a-zA-Z0-9]//g;
-			$sequenceDetails->{'sequence'} = multiLineSeq($sequenceDetails->{'sequence'},80);
-			print ">$assemblySequence[2].$assemblySequence[0] $assemblySequence[4]-$seqType{$assemblySequence[3]} $assemblySequence[5] bp $sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequenceDetails->{'sequence'}";
+			my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+			my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+									-format => 'Fasta');
+			while ( my $seq = $in->next_seq() )
+			{
+				$sequence = $seq->seq;
+			}
+			$sequence = multiLineSeq($sequence,80);
+			print ">$assemblySequence[2].$assemblySequence[0] $assemblySequence[4]-$seqType{$assemblySequence[3]} $assemblySequence[5] bp $sequenceDetails->{'id'} $sequenceDetails->{'description'}\n$sequence";
 		}
 	}
 }
@@ -697,11 +727,16 @@ elsif(param ('assemblyId'))
 					my $sequenceDetails = decode_json $assemblySequence[8];
 					$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 					$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-					$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-					$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 					$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
 					$sequenceDetails->{'filter'} = '' unless (exists $sequenceDetails->{'filter'});
-					$sequenceDetails->{'sequence'} =~ s/[^a-zA-Z0-9]//g;
+					my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+					my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+											-format => 'Fasta');
+					while ( my $seq = $in->next_seq() )
+					{
+						$sequence = $seq->seq;
+					}
+
 					if($ctgSequence)
 					{
 						print ",$assemblySeq[2].$assemblySeq[5]";
@@ -768,17 +803,17 @@ elsif(param ('assemblyId'))
 						}
 						for my $position(@position)
 						{
-							my $sequence = substr($sequenceDetails->{'sequence'}, $position->[0] - 1, $position->[1] - $position->[0] + 1);		
-							$sequence = reverseComplement($sequence) if($assemblySeq[7] < 0);
-							$ctgSequence .= $sequence;
+							my $subSequence = substr($sequence, $position->[0] - 1, $position->[1] - $position->[0] + 1);		
+							$subSequence = reverseComplement($subSequence) if($assemblySeq[7] < 0);
+							$ctgSequence .= $subSequence;
 							$lastComponentType = 'D';
 						}
 					}
 					else
 					{
-						my $sequence = substr($sequenceDetails->{'sequence'}, $assemblySeqStart - 1, $assemblySeqEnd - $assemblySeqStart + 1);		
-						$sequence = reverseComplement($sequence) if($assemblySeq[7] < 0);
-						$ctgSequence .= $sequence;
+						my $subSequence = substr($sequence, $assemblySeqStart - 1, $assemblySeqEnd - $assemblySeqStart + 1);		
+						$subSequence = reverseComplement($subSequence) if($assemblySeq[7] < 0);
+						$ctgSequence .= $subSequence;
 						$lastComponentType = 'D';
 					}
 
@@ -858,11 +893,16 @@ elsif(param ('assemblyId'))
 					my $sequenceDetails = decode_json $assemblySequence[8];
 					$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 					$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-					$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-					$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 					$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
 					$sequenceDetails->{'filter'} = '' unless (exists $sequenceDetails->{'filter'});
-					$sequenceDetails->{'sequence'} =~ s/[^a-zA-Z0-9]//g;
+					my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+					my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+											-format => 'Fasta');
+					while ( my $seq = $in->next_seq() )
+					{
+						$sequence = $seq->seq;
+					}
+
 					if($ctgSequence)
 					{
 						print ",$assemblySeq[2].$assemblySeq[5]";
@@ -929,17 +969,17 @@ elsif(param ('assemblyId'))
 						}
 						for my $position(@position)
 						{
-							my $sequence = substr($sequenceDetails->{'sequence'}, $position->[0] - 1, $position->[1] - $position->[0] + 1);		
-							$sequence = reverseComplement($sequence) if($assemblySeq[7] < 0);
-							$ctgSequence .= $sequence;
+							my $subSequence = substr($sequence, $position->[0] - 1, $position->[1] - $position->[0] + 1);		
+							$subSequence = reverseComplement($subSequence) if($assemblySeq[7] < 0);
+							$ctgSequence .= $subSequence;
 							$lastComponentTypeOnChr->{$chrName} = 'D';
 						}
 					}
 					else
 					{
-						my $sequence = substr($sequenceDetails->{'sequence'}, $assemblySeqStart - 1, $assemblySeqEnd - $assemblySeqStart + 1);		
-						$sequence = reverseComplement($sequence) if($assemblySeq[7] < 0);
-						$ctgSequence .= $sequence;
+						my $subSequence = substr($sequence, $assemblySeqStart - 1, $assemblySeqEnd - $assemblySeqStart + 1);		
+						$subSequence = reverseComplement($subSequence) if($assemblySeq[7] < 0);
+						$ctgSequence .= $subSequence;
 						$lastComponentTypeOnChr->{$chrName} = 'D';
 					}
 
@@ -989,11 +1029,16 @@ elsif(param ('assemblyId'))
 				my $sequenceDetails = decode_json $assemblySequence[8];
 				$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 				$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-				$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-				$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 				$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
 				$sequenceDetails->{'filter'} = '' unless (exists $sequenceDetails->{'filter'});
-				$sequenceDetails->{'sequence'} =~ s/[^a-zA-Z0-9]//g;
+				my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+				my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+										-format => 'Fasta');
+				while ( my $seq = $in->next_seq() )
+				{
+					$sequence = $seq->seq;
+				}
+
 				if($ctgSequence)
 				{
 					print ",$assemblySeq[2].$assemblySeq[5]";
@@ -1060,17 +1105,17 @@ elsif(param ('assemblyId'))
 					}
 					for my $position(@position)
 					{
-						my $sequence = substr($sequenceDetails->{'sequence'}, $position->[0] - 1, $position->[1] - $position->[0] + 1);		
-						$sequence = reverseComplement($sequence) if($assemblySeq[7] < 0);
-						$ctgSequence .= $sequence;
+						my $subSequence = substr($sequence, $position->[0] - 1, $position->[1] - $position->[0] + 1);		
+						$subSequence = reverseComplement($subSequence) if($assemblySeq[7] < 0);
+						$ctgSequence .= $subSequence;
 						$lastComponentType = 'D';
 					}
 				}
 				else
 				{
-					my $sequence = substr($sequenceDetails->{'sequence'}, $assemblySeqStart - 1, $assemblySeqEnd - $assemblySeqStart + 1);		
-					$sequence = reverseComplement($sequence) if($assemblySeq[7] < 0);
-					$ctgSequence .= $sequence;
+					my $subSequence = substr($sequence, $assemblySeqStart - 1, $assemblySeqEnd - $assemblySeqStart + 1);		
+					$subSequence = reverseComplement($subSequence) if($assemblySeq[7] < 0);
+					$ctgSequence .= $subSequence;
 					$lastComponentType = 'D';
 				}
 				if ($assemblySeq[4] eq 2 || $assemblySeq[4] eq 3 || $assemblySeq[4] eq 5 || $assemblySeq[4] eq 6 || $assemblySeq[4] eq 7 || $assemblySeq[4] eq 8) # add 3' 100 Ns

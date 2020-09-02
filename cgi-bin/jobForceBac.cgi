@@ -2,9 +2,9 @@
 use strict;
 use CGI qw(:standard);
 use CGI::Carp qw ( fatalsToBrowser ); 
-use Bio::SeqIO;
 use LWP::Simple qw/getstore/;
 use JSON::XS; #JSON::XS is recommended to be installed for handling JSON string of big size 
+use Bio::SeqIO;
 use DBI;
 use lib "lib/";
 use lib "lib/pangu";
@@ -98,10 +98,14 @@ elsif($pid == 0){
 					$cloneBesNumber->{$libraryToBes[2]}++;
 					$besTotalNumber++;
 					my $sequenceDetails = decode_json $libraryToBes[8];
-					$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-					$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.
-					next unless ($sequenceDetails->{'sequence'});
-					print BES ">$libraryToBes[2].$libraryToBes[6]\n$sequenceDetails->{'sequence'}\n";						
+					my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+					my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+											-format => 'Fasta');
+					while ( my $seq = $in->next_seq() )
+					{
+						$sequence = $seq->seq;
+					}
+					print BES ">$libraryToBes[2].$libraryToBes[6]\n$sequence\n";						
 				}			
 				close (BES);
 				$relatedLibrary->{$pool[4]} = 1;
@@ -113,10 +117,15 @@ elsif($pid == 0){
 			{
 				my $bacIdAssigned = 0;
 				my $sequenceDetails = decode_json $jobToSequence[8];
-				$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-				next unless ($sequenceDetails->{'sequence'});
+				my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+				my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+										-format => 'Fasta');
+				while ( my $seq = $in->next_seq() )
+				{
+					$sequence = $seq->seq;
+				}
 				open (SEQ,">$commoncfg->{TMPDIR}/$jobToSequence[0].seq") or die "can't open file: $commoncfg->{TMPDIR}/$jobToSequence[0].seq";
-				print SEQ ">$jobToSequence[0]\n$sequenceDetails->{'sequence'}";
+				print SEQ ">$jobToSequence[0]\n$sequence";
 				close (SEQ);
 				if($tagTotalNumber > 0)
 				{

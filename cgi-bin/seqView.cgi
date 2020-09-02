@@ -3,6 +3,7 @@ use strict;
 use CGI qw(:standard);
 use CGI::Carp qw ( fatalsToBrowser ); 
 use JSON::XS;
+use Bio::SeqIO;
 use DBI;
 use lib "lib/";
 use lib "lib/pangu";
@@ -74,13 +75,17 @@ if ($seqId)
 		{
 			$sequenceDetails->{'description'} = "<a title='$sequenceDetails->{'description'}'>". substr($sequenceDetails->{'description'},0,20). "...". substr($sequenceDetails->{'description'},-5). "</a>";
 		}
-		$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-		$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.
 		$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
 		$sequenceDetails->{'filter'} = '' unless (exists $sequenceDetails->{'filter'});
 		my @gaps = split (",",$sequenceDetails->{'gapList'});
 		my $longSeq = 1200;
-		my $sequence = $sequenceDetails->{'sequence'};
+		my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+		my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+								-format => 'Fasta');
+		while ( my $seq = $in->next_seq() )
+		{
+			$sequence = $seq->seq;
+		}
 		my $sequenceLeft = ($getSeq[5] > $longSeq) ? substr($sequence,0,$longSeq/2) : $sequence;
 		my $sequenceRight =  ($getSeq[5] > $longSeq) ? substr($sequence,-$longSeq/2) : '';
 		$sequence = multiLineSeq($sequenceLeft,60);

@@ -3,6 +3,7 @@ use strict;
 use CGI qw(:standard);
 use CGI::Carp qw ( fatalsToBrowser ); 
 use JSON::XS; #JSON::XS is recommended to be installed for handling JSON string of big size 
+use Bio::SeqIO;
 use DBI;
 use lib "lib/";
 use lib "lib/pangu";
@@ -88,10 +89,16 @@ END
 					my $sequenceDetails = decode_json $getSequences[8];
 					$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 					$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-					$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-					$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 					$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
-					print SEQALL ">$getSequences[0]\n$sequenceDetails->{'sequence'}\n";
+					my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+					my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+											-format => 'Fasta');
+					while ( my $seq = $in->next_seq() )
+					{
+						$sequence = $seq->seq;
+					}
+
+					print SEQALL ">$getSequences[0]\n$sequence\n";
 				}
 			}
 		}
@@ -105,10 +112,15 @@ END
 				my $sequenceDetails = decode_json $getSequences[8];
 				$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 				$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-				$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-				$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 				$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
-				print SEQALL ">$getSequences[0]\n$sequenceDetails->{'sequence'}\n";
+				my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+				my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+										-format => 'Fasta');
+				while ( my $seq = $in->next_seq() )
+				{
+					$sequence = $seq->seq;
+				}
+				print SEQALL ">$getSequences[0]\n$sequence\n";
 			}
 		}
 		close(SEQALL);
@@ -140,10 +152,15 @@ END
 						my $sequenceDetails = decode_json $getSequences[8];
 						$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 						$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-						$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-						$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 						$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
-						print SEQALL ">$getSequences[0]\n$sequenceDetails->{'sequence'}\n";
+						my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+						my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+												-format => 'Fasta');
+						while ( my $seq = $in->next_seq() )
+						{
+							$sequence = $seq->seq;
+						}
+						print SEQALL ">$getSequences[0]\n$sequence\n";
 					}
 				}
 			}
@@ -157,10 +174,15 @@ END
 					my $sequenceDetails = decode_json $getSequences[8];
 					$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
 					$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-					$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-					$sequenceDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 					$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
-					print SEQALL ">$getSequences[0]\n$sequenceDetails->{'sequence'}\n";
+					my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+					my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
+											-format => 'Fasta');
+					while ( my $seq = $in->next_seq() )
+					{
+						$sequence = $seq->seq;
+					}
+					print SEQALL ">$getSequences[0]\n$sequence\n";
 				}
 			}
 			close(SEQALL);
@@ -294,10 +316,15 @@ END
 						my $sequenceDetailsA = decode_json $getSequenceA[8];
 						$sequenceDetailsA->{'id'} = '' unless (exists $sequenceDetailsA->{'id'});
 						$sequenceDetailsA->{'description'} = '' unless (exists $sequenceDetailsA->{'description'});
-						$sequenceDetailsA->{'sequence'} = '' unless (exists $sequenceDetailsA->{'sequence'});
-						$sequenceDetailsA->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 						$sequenceDetailsA->{'gapList'} = '' unless (exists $sequenceDetailsA->{'gapList'});
-						print SEQA ">$getSequenceA[0]\n$sequenceDetailsA->{'sequence'}\n";
+						my $sequenceA = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+						my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetailsA->{'sequence'}",
+												-format => 'Fasta');
+						while ( my $seq = $in->next_seq() )
+						{
+							$sequenceA = $seq->seq;
+						}
+						print SEQA ">$getSequenceA[0]\n$sequenceA\n";
 						close(SEQA);
 					}
 					unless(-e "$commoncfg->{TMPDIR}/$hit[1].$$.seq")
@@ -309,10 +336,15 @@ END
 						my $sequenceDetailsB = decode_json $getSequenceB[8];
 						$sequenceDetailsB->{'id'} = '' unless (exists $sequenceDetailsB->{'id'});
 						$sequenceDetailsB->{'description'} = '' unless (exists $sequenceDetailsB->{'description'});
-						$sequenceDetailsB->{'sequence'} = '' unless (exists $sequenceDetailsB->{'sequence'});
-						$sequenceDetailsB->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.;
 						$sequenceDetailsB->{'gapList'} = '' unless (exists $sequenceDetailsB->{'gapList'});
-						print SEQB ">$getSequenceB[0]\n$sequenceDetailsB->{'sequence'}\n";
+						my $sequenceB = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+						my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetailsB->{'sequence'}",
+												-format => 'Fasta');
+						while ( my $seq = $in->next_seq() )
+						{
+							$sequenceB = $seq->seq;
+						}
+						print SEQB ">$getSequenceB[0]\n$sequenceB\n";
 						close(SEQB);
 					}
 					my @alignments;
