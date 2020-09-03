@@ -198,33 +198,32 @@ END
 						close (STDOUT);
 
 						#loading sequence
-						my @allSequenceId;
 						my $in = Bio::SeqIO->new(-file => $genomeInfile,
 												-format => 'Fasta');
 						while ( my $seq = $in->next_seq() )
 						{
-							my $seqDetails;
-							$seqDetails->{'id'} = $seq->id;
-							$seqDetails->{'description'} = $seq->desc || '';
-							$seqDetails->{'sequence'} = $seq->seq;
-							$seqDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.
-#							$seqDetails->{'sequence'} =~ s/^N+|N+$//g; #replace Ns at both ends.	
-							$seqDetails->{'gapList'} = '';
+							my $sequenceDetails;
+							$sequenceDetails->{'id'} = $seq->id;
+							$sequenceDetails->{'description'} = $seq->desc || '';
+							$sequenceDetails->{'sequence'} = '';
+							$sequenceDetails->{'gapList'} = '';
+							my $sequence = $seq->seq;
+							$sequence =~ tr/a-zA-Z/N/c; #replace nonword characters.
 							my $chrNumber = 0;
 							if($assignChr)
 							{
-								$chrNumber = ($seqDetails->{'id'} =~ /(\d+)/) ? $1 : 0;
+								$chrNumber = ($sequenceDetails->{'id'} =~ /(\d+)/) ? $1 : 0;
 							}
 							my $seqLength = $seq->length();
 							my $seqend = 0;
 							my @piece = ();
-							foreach (split(/([N|n]{20,})/,$seqDetails->{'sequence'})) #at least 20 Ns to be a gap
+							foreach (split(/([N|n]{20,})/,$sequence)) #at least 20 Ns to be a gap
 							{
 								my $seqstart=$seqend+1;
 								$seqend=$seqend + length($_);
 								if($_ =~ /^[N|n]+$/)
 								{
-									$seqDetails->{'gapList'} .= ($seqDetails->{'gapList'} ne '') ? ",$seqstart-$seqend" : "$seqstart-$seqend" ;
+									$sequenceDetails->{'gapList'} .= ($sequenceDetails->{'gapList'} ne '') ? ",$seqstart-$seqend" : "$seqstart-$seqend" ;
 								}
 								else
 								{
@@ -238,11 +237,46 @@ END
 									push @piece, $pieceDetailsEncoded;
 								}
 							}
-							my $seqDetailsEncoded = $json->encode($seqDetails);
+							my $sequenceDetailsEncoded = $json->encode($sequenceDetails);
 							my $insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', ?, 99, ?, ?, ?, 0, ?, ?, NOW())");
-							$insertSequence->execute($seq->id,$genomeId,$seqLength,$chrNumber,$seqDetailsEncoded,$userName);
+							$insertSequence->execute($seq->id,$genomeId,$seqLength,$chrNumber,$sequenceDetailsEncoded,$userName);
 							my $parentSequenceId = $dbh->{mysql_insertid};
-							push @allSequenceId,$parentSequenceId;
+
+							my $seqDir;
+							for (my $position = 0; $position < length($genomeId); $position += 2)
+							{
+								$seqDir .= "/g". substr($genomeId,$position,2);
+								until (-e "$commoncfg->{DATADIR}/sequences$seqDir")
+								{
+									mkdir "$commoncfg->{DATADIR}/sequences$seqDir";
+								}
+							}
+
+							my $seqFile;
+							for (my $position = 0; $position < length($parentSequenceId); $position += 2)
+							{
+								$seqFile .= "/s". substr($parentSequenceId,$position,2);
+								if (length ($seqFile) % 4 == 0)
+								{
+									until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile")
+									{
+										mkdir "$commoncfg->{DATADIR}/sequences$seqDir$seqFile";
+									}
+								}
+							}
+
+							until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa")
+							{
+								open (SEQ,">$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa") or die "can't open file: $commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa";
+								print SEQ ">$parentSequenceId\n";
+								print SEQ &multiLineSeq($sequence,80);
+								close(SEQ);
+							}
+
+							$sequenceDetails->{'sequence'} = "sequences$seqDir$seqFile.fa";
+							$sequenceDetailsEncoded = $json->encode($sequenceDetails);
+							my $updateSequence = $dbh->prepare("UPDATE matrix SET note = ? WHERE id = ?");
+							$updateSequence->execute($sequenceDetailsEncoded,$parentSequenceId);
 
 							if($split && @piece > 1)
 							{
@@ -251,63 +285,56 @@ END
 								{
 									my $pieceDetails = decode_json $_;
 									$pieceDetails->{'id'} = '' unless (exists $pieceDetails->{'id'});
-									$pieceDetails->{'sequence'} = '' unless (exists $pieceDetails->{'sequence'});
-									$seqLength = length ($pieceDetails->{'sequence'});
-									my $insertChildSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', ?, 97, ?, ?, ?, ?, ?, ?, NOW())");
-									$insertChildSequence->execute($pieceDetails->{'id'}.'-'.$pieceNumber,$genomeId,$seqLength,$pieceNumber,$parentSequenceId,$_,$userName);
-									my $childSequenceId = $dbh->{mysql_insertid};
-									push @allSequenceId,$childSequenceId;
+									my $pieceSequence = $pieceDetails->{'sequence'};
+									$seqLength = length ($pieceSequence);
+									$pieceDetails->{'sequence'} = '';
+									my $pieceDetailsEncoded = $json->encode($pieceDetails);
+									my $insertPieceSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', ?, 97, ?, ?, ?, ?, ?, ?, NOW())");
+									$insertPieceSequence->execute($pieceDetails->{'id'}.'-'.$pieceNumber,$genomeId,$seqLength,$pieceNumber,$parentSequenceId,$pieceDetailsEncoded,$userName);
+									my $pieceSequenceId = $dbh->{mysql_insertid};
+
+									my $pieceDir;
+									for (my $position = 0; $position < length($genomeId); $position += 2)
+									{
+										$pieceDir .= "/g". substr($genomeId,$position,2);
+										until (-e "$commoncfg->{DATADIR}/sequences$pieceDir")
+										{
+											mkdir "$commoncfg->{DATADIR}/sequences$pieceDir";
+										}
+									}
+
+									my $pieceFile;
+									for (my $position = 0; $position < length($pieceSequenceId); $position += 2)
+									{
+										$pieceFile .= "/p". substr($pieceSequenceId,$position,2);
+										if (length ($pieceFile) % 4 == 0)
+										{
+											until (-e "$commoncfg->{DATADIR}/sequences$pieceDir$pieceFile")
+											{
+												mkdir "$commoncfg->{DATADIR}/sequences$pieceDir$pieceFile";
+											}
+										}
+									}
+
+									until (-e "$commoncfg->{DATADIR}/sequences$pieceDir$pieceFile.fa")
+									{
+										open (SEQ,">$commoncfg->{DATADIR}/sequences$pieceDir$pieceFile.fa") or die "can't open file: $commoncfg->{DATADIR}/sequences$pieceDir$pieceFile.fa";
+										print SEQ ">$pieceSequenceId\n";
+										print SEQ &multiLineSeq($pieceSequence,80);
+										close(SEQ);
+									}
+
+									$pieceDetails->{'sequence'} = "sequences$pieceDir$pieceFile.fa";
+									$pieceDetailsEncoded = $json->encode($pieceDetails);
+									my $updatePieceSequence = $dbh->prepare("UPDATE matrix SET note = ? WHERE id = ?");
+									$updatePieceSequence->execute($pieceDetailsEncoded,$pieceSequenceId);
+
 									$pieceNumber++;
 								}
 							}					
 						}
 						unlink ($genomeInfile);
 						unlink ($agpInfile);
-						foreach (@allSequenceId)
-						{
-							my $getSequences = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-							$getSequences->execute($_);
-							while(my @getSequences = $getSequences->fetchrow_array())
-							{
-								my $sequenceDetails = decode_json $getSequences[8];
-								$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-								my $seqDir;
-								for (my $position = 0; $position < length($getSequences[4]); $position += 2)
-								{
-									$seqDir .= "/g". substr($getSequences[4],$position,2);
-									until (-e "$commoncfg->{DATADIR}/sequences$seqDir")
-									{
-										mkdir "$commoncfg->{DATADIR}/sequences$seqDir";
-									}
-								}
-
-								my $seqFile;
-								for (my $position = 0; $position < length($getSequences[0]); $position += 2)
-								{
-									$seqFile .= "/s". substr($getSequences[0],$position,2);
-									if (length ($seqFile) % 4 == 0)
-									{
-										until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile")
-										{
-											mkdir "$commoncfg->{DATADIR}/sequences$seqDir$seqFile";
-										}
-									}
-								}
-
-								until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa")
-								{
-									open (SEQ,">$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa") or die "can't open file: $commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa";
-									print SEQ ">$getSequences[0]\n";
-									print SEQ &multiLineSeq($sequenceDetails->{'sequence'},80);
-									close(SEQ);
-								}
-
-								$sequenceDetails->{'sequence'} = "sequences$seqDir$seqFile.fa";
-								my $seqDetailsEncoded = $json->encode($sequenceDetails);
-								my $updateSequence = $dbh->prepare("UPDATE matrix SET note = ? WHERE id = ?");
-								$updateSequence->execute($seqDetailsEncoded,$getSequences[0]);
-							}
-						}
 						
 						my $seqNumber = 0;
 						my $countGenomeSequence = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 99 AND x = $genomeId");
@@ -406,33 +433,32 @@ END
 					}		
 					`perl -p -i -e 's/\r/\n/g' $genomeInfile`; #convert CR line terminators (MAC OS) into LF line terminators (Unix)
 					#loading sequence
-					my @allSequenceId;
 					my $in = Bio::SeqIO->new(-file => $genomeInfile,
 											-format => 'Fasta');
 					while ( my $seq = $in->next_seq() )
 					{
-						my $seqDetails;
-						$seqDetails->{'id'} = $seq->id;
-						$seqDetails->{'description'} = $seq->desc || '';
-						$seqDetails->{'sequence'} = $seq->seq;
-						$seqDetails->{'sequence'} =~ tr/a-zA-Z/N/c; #replace nonword characters.
-#						$seqDetails->{'sequence'} =~ s/^N+|N+$//g; #replace Ns at both ends.	
-						$seqDetails->{'gapList'} = '';
+						my $sequenceDetails;
+						$sequenceDetails->{'id'} = $seq->id;
+						$sequenceDetails->{'description'} = $seq->desc || '';
+						$sequenceDetails->{'sequence'} = '';
+						$sequenceDetails->{'gapList'} = '';
+						my $sequence = $seq->seq;
+						$sequence =~ tr/a-zA-Z/N/c; #replace nonword characters.
 						my $chrNumber = 0;
 						if($assignChr)
 						{
-							$chrNumber = ($seqDetails->{'id'} =~ /(\d+)/) ? $1 : 0;
+							$chrNumber = ($sequenceDetails->{'id'} =~ /(\d+)/) ? $1 : 0;
 						}
 						my $seqLength = $seq->length();
 						my $seqend = 0;
 						my @piece = ();
-						foreach (split(/([N|n]{20,})/,$seqDetails->{'sequence'})) #at least 20 Ns to be a gap
+						foreach (split(/([N|n]{20,})/,$sequenceDetails->{'sequence'})) #at least 20 Ns to be a gap
 						{
 							my $seqstart=$seqend+1;
 							$seqend=$seqend + length($_);
 							if($_ =~ /^[N|n]+$/)
 							{
-								$seqDetails->{'gapList'} .= ($seqDetails->{'gapList'} ne '') ? ",$seqstart-$seqend" : "$seqstart-$seqend" ;
+								$sequenceDetails->{'gapList'} .= ($sequenceDetails->{'gapList'} ne '') ? ",$seqstart-$seqend" : "$seqstart-$seqend" ;
 							}
 							else
 							{
@@ -446,11 +472,46 @@ END
 								push @piece, $pieceDetailsEncoded;
 							}
 						}
-						$seqDetails = $json->encode($seqDetails);
+						my $sequenceDetailsEncoded = $json->encode($sequenceDetails);
 						my $insertSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', ?, 99, ?, ?, ?, 0, ?, ?, NOW())");
-						$insertSequence->execute($seq->id,$genomeId,$seqLength,$chrNumber,$seqDetails,$userName);
+						$insertSequence->execute($seq->id,$genomeId,$seqLength,$chrNumber,$sequenceDetailsEncoded,$userName);
 						my $parentSequenceId = $dbh->{mysql_insertid};
-						push @allSequenceId,$parentSequenceId;
+
+						my $seqDir;
+						for (my $position = 0; $position < length($genomeId); $position += 2)
+						{
+							$seqDir .= "/g". substr($genomeId,$position,2);
+							until (-e "$commoncfg->{DATADIR}/sequences$seqDir")
+							{
+								mkdir "$commoncfg->{DATADIR}/sequences$seqDir";
+							}
+						}
+
+						my $seqFile;
+						for (my $position = 0; $position < length($parentSequenceId); $position += 2)
+						{
+							$seqFile .= "/s". substr($parentSequenceId,$position,2);
+							if (length ($seqFile) % 4 == 0)
+							{
+								until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile")
+								{
+									mkdir "$commoncfg->{DATADIR}/sequences$seqDir$seqFile";
+								}
+							}
+						}
+
+						until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa")
+						{
+							open (SEQ,">$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa") or die "can't open file: $commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa";
+							print SEQ ">$parentSequenceId\n";
+							print SEQ &multiLineSeq($sequence,80);
+							close(SEQ);
+						}
+
+						$sequenceDetails->{'sequence'} = "sequences$seqDir$seqFile.fa";
+						$sequenceDetailsEncoded = $json->encode($sequenceDetails);
+						my $updateSequence = $dbh->prepare("UPDATE matrix SET note = ? WHERE id = ?");
+						$updateSequence->execute($sequenceDetailsEncoded,$parentSequenceId);
 
 						if($split && @piece > 1)
 						{
@@ -459,64 +520,56 @@ END
 							{
 								my $pieceDetails = decode_json $_;
 								$pieceDetails->{'id'} = '' unless (exists $pieceDetails->{'id'});
-								$pieceDetails->{'sequence'} = '' unless (exists $pieceDetails->{'sequence'});
-								$seqLength = length ($pieceDetails->{'sequence'});
-								my $insertChildSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', ?, 97, ?, ?, ?, ?, ?, ?, NOW())");
-								$insertChildSequence->execute($pieceDetails->{'id'}.'-'.$pieceNumber,$genomeId,$seqLength,$pieceNumber,$parentSequenceId,$_,$userName);
-								my $childSequenceId = $dbh->{mysql_insertid};
-								push @allSequenceId,$childSequenceId;
+								my $pieceSequence = $pieceDetails->{'sequence'};
+								$seqLength = length ($pieceSequence);
+								$pieceDetails->{'sequence'} = '';
+								my $pieceDetailsEncoded = $json->encode($pieceDetails);
+								my $insertPieceSequence=$dbh->prepare("INSERT INTO matrix VALUES ('', 'sequence', ?, 97, ?, ?, ?, ?, ?, ?, NOW())");
+								$insertPieceSequence->execute($pieceDetails->{'id'}.'-'.$pieceNumber,$genomeId,$seqLength,$pieceNumber,$parentSequenceId,$pieceDetailsEncoded,$userName);
+								my $pieceSequenceId = $dbh->{mysql_insertid};
+
+								my $pieceDir;
+								for (my $position = 0; $position < length($genomeId); $position += 2)
+								{
+									$pieceDir .= "/g". substr($genomeId,$position,2);
+									until (-e "$commoncfg->{DATADIR}/sequences$pieceDir")
+									{
+										mkdir "$commoncfg->{DATADIR}/sequences$pieceDir";
+									}
+								}
+
+								my $pieceFile;
+								for (my $position = 0; $position < length($pieceSequenceId); $position += 2)
+								{
+									$pieceFile .= "/p". substr($pieceSequenceId,$position,2);
+									if (length ($pieceFile) % 4 == 0)
+									{
+										until (-e "$commoncfg->{DATADIR}/sequences$pieceDir$pieceFile")
+										{
+											mkdir "$commoncfg->{DATADIR}/sequences$pieceDir$pieceFile";
+										}
+									}
+								}
+
+								until (-e "$commoncfg->{DATADIR}/sequences$pieceDir$pieceFile.fa")
+								{
+									open (SEQ,">$commoncfg->{DATADIR}/sequences$pieceDir$pieceFile.fa") or die "can't open file: $commoncfg->{DATADIR}/sequences$pieceDir$pieceFile.fa";
+									print SEQ ">$pieceSequenceId\n";
+									print SEQ &multiLineSeq($pieceSequence,80);
+									close(SEQ);
+								}
+
+								$pieceDetails->{'sequence'} = "sequences$pieceDir$pieceFile.fa";
+								$pieceDetailsEncoded = $json->encode($pieceDetails);
+								my $updatePieceSequence = $dbh->prepare("UPDATE matrix SET note = ? WHERE id = ?");
+								$updatePieceSequence->execute($pieceDetailsEncoded,$pieceSequenceId);
+
 								$pieceNumber++;
 							}
 						}
 					}
 					unlink ($genomeInfile);
 					unlink ($agpInfile);
-
-					foreach (@allSequenceId)
-					{
-						my $getSequences = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-						$getSequences->execute($_);
-						while(my @getSequences = $getSequences->fetchrow_array())
-						{
-							my $sequenceDetails = decode_json $getSequences[8];
-							$sequenceDetails->{'sequence'} = '' unless (exists $sequenceDetails->{'sequence'});
-							my $seqDir;
-							for (my $position = 0; $position < length($getSequences[4]); $position += 2)
-							{
-								$seqDir .= "/g". substr($getSequences[4],$position,2);
-								until (-e "$commoncfg->{DATADIR}/sequences$seqDir")
-								{
-									mkdir "$commoncfg->{DATADIR}/sequences$seqDir";
-								}
-							}
-
-							my $seqFile;
-							for (my $position = 0; $position < length($getSequences[0]); $position += 2)
-							{
-								$seqFile .= "/s". substr($getSequences[0],$position,2);
-								if (length ($seqFile) % 4 == 0)
-								{
-									until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile")
-									{
-										mkdir "$commoncfg->{DATADIR}/sequences$seqDir$seqFile";
-									}
-								}
-							}
-
-							until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa")
-							{
-								open (SEQ,">$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa") or die "can't open file: $commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa";
-								print SEQ ">$getSequences[0]\n";
-								print SEQ &multiLineSeq($sequenceDetails->{'sequence'},80);
-								close(SEQ);
-							}
-
-							$sequenceDetails->{'sequence'} = "sequences$seqDir$seqFile.fa";
-							my $seqDetailsEncoded = $json->encode($sequenceDetails);
-							my $updateSequence = $dbh->prepare("UPDATE matrix SET note = ? WHERE id = ?");
-							$updateSequence->execute($seqDetailsEncoded,$getSequences[0]);
-						}
-					}
 
 					my $seqNumber = 0;
 					my $countGenomeSequence = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 99 AND x = $genomeId");

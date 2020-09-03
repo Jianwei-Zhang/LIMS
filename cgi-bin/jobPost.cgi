@@ -687,7 +687,7 @@ elsif($pid == 0){
 				my $seqDir;
 				for (my $position = 0; $position < length($getSequences[4]); $position += 2)
 				{
-					$seqDir .= "/g". substr($getSequences[4],$position,2);
+					$seqDir .= "/j". substr($getSequences[4],$position,2);
 					until (-e "$commoncfg->{DATADIR}/sequences$seqDir")
 					{
 						mkdir "$commoncfg->{DATADIR}/sequences$seqDir";
