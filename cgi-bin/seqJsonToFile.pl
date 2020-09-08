@@ -19,6 +19,8 @@ until (-e "$commoncfg->{DATADIR}/sequences")
 	mkdir "$commoncfg->{DATADIR}/sequences";
 	print "done!\n";
 }
+print "Please check $commoncfg->{DATADIR}/sequences/seqJsonToFile.log for exporting details.\n";
+open (LOG,">$commoncfg->{DATADIR}/sequences/seqJsonToFile.log") or die "can't open file: $commoncfg->{DATADIR}/sequences/seqJsonToFile.log";
 
 my $seqNumber = 0;
 my $getSequences = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence'");
@@ -34,9 +36,9 @@ while(my @getSequences = $getSequences->fetchrow_array())
 		$seqDir .= "/g". substr($getSequences[4],$position,2);
 		until (-e "$commoncfg->{DATADIR}/sequences$seqDir")
 		{
-			print "Creating directory $commoncfg->{DATADIR}/sequences$seqDir ... ";
+			print LOG "Creating directory $commoncfg->{DATADIR}/sequences$seqDir ... ";
 			mkdir "$commoncfg->{DATADIR}/sequences$seqDir";
-			print "done!\n";
+			print LOG "done!\n";
 		}
 	}
 
@@ -48,27 +50,28 @@ while(my @getSequences = $getSequences->fetchrow_array())
 		{
 			until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile")
 			{
-				print "Creating directory $commoncfg->{DATADIR}/sequences$seqDir$seqFile ... ";
+				print LOG "Creating directory $commoncfg->{DATADIR}/sequences$seqDir$seqFile ... ";
 				mkdir "$commoncfg->{DATADIR}/sequences$seqDir$seqFile";
-				print "done!\n";
+				print LOG "done!\n";
 			}
 		}
 	}
 
 	until (-e "$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa")
 	{
-		print "Exporting No. $seqNumber sequence '$getSequences[4]-$getSequences[0]' ... ";
+		print LOG "Exporting No. $seqNumber sequence '$getSequences[4]-$getSequences[0]' ... ";
 		open (SEQ,">$commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa") or die "can't open file: $commoncfg->{DATADIR}/sequences$seqDir$seqFile.fa";
 		print SEQ ">$getSequences[0]\n";
 		print SEQ &multiLineSeq($sequenceDetails->{'sequence'},80);
 		close(SEQ);
-		print "done!\n";
+		print LOG "done!\n";
 	}
 
-	print "Updating JSON of sequence '$getSequences[4]-$getSequences[0]' ... ";	
+	print LOG "Updating JSON of sequence '$getSequences[4]-$getSequences[0]' ... ";	
 	$sequenceDetails->{'sequence'} = "sequences$seqDir$seqFile.fa";
 	my $seqDetailsEncoded = $json->encode($sequenceDetails);
 	my $updateSequence = $dbh->prepare("UPDATE matrix SET note = ? WHERE id = ?");
 	$updateSequence->execute($seqDetailsEncoded,$getSequences[0]);
-	print "done!\n";
+	print LOG "done!\n";
 }
+close(LOG);
