@@ -1688,7 +1688,6 @@ END
 
 					my @dirs;
 					push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
-					my @dirFile;
 
 					do{
 						my $dir = shift @dirs;
@@ -1700,40 +1699,38 @@ END
 							next if ($file =~ /^\./);
 							if(-f "$dir/$file")
 							{
-								push @dirFile, "$dir/$file";
+								if ($file =~ /(\d+)-(\d+).tbl$/)
+								{
+									open (TBL, "$dir/$file") or die "can't open file: $dir/$file";
+									while(<TBL>)
+									{
+										/^#/ and next;
+										my @getAlignment = split("\t",$_);
+										next if ($getAlignment[12] > 0);
+										next unless (exists $sequenceInRefGenome->{$getAlignment[1]}); #check if subject is in refGenome
+										next unless ($getAlignment[3] >= $alignmentBlockSize || $getAlignment[3]*100/$sequenceLength->{$sequenceIdOfAssemblySeq->{$assemblySeqIndividual}} >= $alignmentCoverage);
+										$chrNumber->{$sequenceInRefGenome->{$getAlignment[1]}} = 0 unless (exists $chrNumber->{$sequenceInRefGenome->{$getAlignment[1]}});
+										$chrNumber->{$sequenceInRefGenome->{$getAlignment[1]}} += $getAlignment[3];
+										my $estimatedPosition = ($getAlignment[8] < $getAlignment[9]) ? $getAlignment[8] - $getAlignment[6] - $assemblyCtgLength : $getAlignment[9] - $sequenceLength->{$sequenceIdOfAssemblySeq->{$assemblySeqIndividual}} + $getAlignment[7] - $assemblyCtgLength;
+										if(exists $chrPosition->{$sequenceInRefGenome->{$getAlignment[1]}})
+										{
+											$chrPosition->{$sequenceInRefGenome->{$getAlignment[1]}} .= ",$estimatedPosition";
+										}
+										else
+										{
+											$chrPosition->{$sequenceInRefGenome->{$getAlignment[1]}} = $estimatedPosition;
+										}
+									}
+									close(TBL);
+								}
 							}
 							elsif(-d "$dir/$file")
 							{
-								push @dirFile, "$dir/$file";
 								unshift @dirs, "$dir/$file";
 							}
 						}
 					}while (@dirs);
 
-					foreach my $file (sort @dirFile)
-					{
-						open (TBL, $file) or die "can't open file: $file";
-						while(<TBL>)
-						{
-							/^#/ and next;
-							my @getAlignment = split("\t",$_);
-							next if ($getAlignment[12] > 0);
-							next unless (exists $sequenceInRefGenome->{$getAlignment[1]}); #check if subject is in refGenome
-							next unless ($getAlignment[3] >= $alignmentBlockSize || $getAlignment[3]*100/$sequenceLength->{$sequenceIdOfAssemblySeq->{$assemblySeqIndividual}} >= $alignmentCoverage);
-							$chrNumber->{$sequenceInRefGenome->{$getAlignment[1]}} = 0 unless (exists $chrNumber->{$sequenceInRefGenome->{$getAlignment[1]}});
-							$chrNumber->{$sequenceInRefGenome->{$getAlignment[1]}} += $getAlignment[3];
-							my $estimatedPosition = ($getAlignment[8] < $getAlignment[9]) ? $getAlignment[8] - $getAlignment[6] - $assemblyCtgLength : $getAlignment[9] - $sequenceLength->{$sequenceIdOfAssemblySeq->{$assemblySeqIndividual}} + $getAlignment[7] - $assemblyCtgLength;
-							if(exists $chrPosition->{$sequenceInRefGenome->{$getAlignment[1]}})
-							{
-								$chrPosition->{$sequenceInRefGenome->{$getAlignment[1]}} .= ",$estimatedPosition";
-							}
-							else
-							{
-								$chrPosition->{$sequenceInRefGenome->{$getAlignment[1]}} = $estimatedPosition;
-							}
-						}
-						close(TBL);
-					}
 
 					my $assemblySeq=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 					$assemblySeq->execute($assemblySeqIndividual);
@@ -1849,7 +1846,6 @@ END
 
 						my @dirs;
 						push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
-						my @dirFile;
 
 						do{
 							my $dir = shift @dirs;
@@ -1861,50 +1857,48 @@ END
 								next if ($file =~ /^\./);
 								if(-f "$dir/$file")
 								{
-									push @dirFile, "$dir/$file";
+									if ($file =~ /(\d+)-(\d+).tbl$/)
+									{
+										open (TBL, "$dir/$file") or die "can't open file: $dir/$file";
+										while(<TBL>)
+										{
+											/^#/ and next;
+											my @getAlignment = split("\t",$_);
+											next if ($getAlignment[12] > 0);
+											next unless (exists $sequenceInRefGenome->{$getAlignment[1]});
+											if($assemblySeq[7] > 0)
+											{
+												if ($getAlignment[8] > $getAlignment[9])
+												{
+													$toBeFlipped += $getAlignment[3];
+												}
+												else
+												{
+													$toBeFlipped -= $getAlignment[3];
+												}
+											}
+											else
+											{
+												if ($getAlignment[8] < $getAlignment[9])
+												{
+													$toBeFlipped += $getAlignment[3];
+												}
+												else
+												{
+													$toBeFlipped -= $getAlignment[3];
+												}
+											}
+										}
+										close(TBL);
+									}
 								}
 								elsif(-d "$dir/$file")
 								{
-									push @dirFile, "$dir/$file";
 									unshift @dirs, "$dir/$file";
 								}
 							}
 						}while (@dirs);
 
-						foreach my $file (sort @dirFile)
-						{
-							open (TBL, $file) or die "can't open file: $file";
-							while(<TBL>)
-							{
-								/^#/ and next;
-								my @getAlignment = split("\t",$_);
-								next if ($getAlignment[12] > 0);
-								next unless (exists $sequenceInRefGenome->{$getAlignment[1]});
-								if($assemblySeq[7] > 0)
-								{
-									if ($getAlignment[8] > $getAlignment[9])
-									{
-										$toBeFlipped += $getAlignment[3];
-									}
-									else
-									{
-										$toBeFlipped -= $getAlignment[3];
-									}
-								}
-								else
-								{
-									if ($getAlignment[8] < $getAlignment[9])
-									{
-										$toBeFlipped += $getAlignment[3];
-									}
-									else
-									{
-										$toBeFlipped -= $getAlignment[3];
-									}
-								}
-							}
-							close(TBL);
-						}
 					}
 					if ($toBeFlipped > 0)
 					{

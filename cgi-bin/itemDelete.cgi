@@ -85,29 +85,68 @@ END
 				
 				#background check for orphan stuffs to be deleted.
 				# orphan alignments
-				my $sequenceIds;
-				my $query = $dbh->prepare("SELECT query FROM alignment GROUP BY query");
-				$query->execute();
-				while (my @query =  $query->fetchrow_array())
+				if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq")
 				{
-					$sequenceIds->{$query[0]} = 1;
+					my @dirs;
+					push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq";
+
+					do{
+						my $dir = shift @dirs;
+						opendir(DIR, $dir) or die "can't opendir $dir: $!";
+						my @files = readdir(DIR);
+						closedir DIR;
+						foreach my $file (sort @files)
+						{
+							next if ($file =~ /^\./);
+							if(-f "$dir/$file")
+							{
+								if ($file =~ /(\d+)-(\d+).tbl$/)
+								{
+									my $queryId = $1;
+									my $subjectId = $2;
+									my $toBeDeleted = 0;
+									my $querySequence = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+									$querySequence->execute($queryId);
+									unless ($querySequence->rows > 0)
+									{
+										$toBeDeleted++;
+									}
+									my $subjectSequence = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+									$subjectSequence->execute($subjectId);
+									unless ($subjectSequence->rows > 0)
+									{
+										$toBeDeleted++;
+									}
+									if($toBeDeleted)
+									{
+										unlink ("$dir/$file"); #delete old alignments
+										my $queryDirSwitched;
+										for (my $position = 0; $position < length($subjectId); $position += 2)
+										{
+											$queryDirSwitched .= "/q". substr($subjectId,$position,2);
+										}
+
+										my $subjectDirSwitched;
+										for (my $position = 0; $position < length($queryId); $position += 2)
+										{
+											$subjectDirSwitched .= "/s". substr($queryId,$position,2);
+										}
+
+										if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$subjectId-$queryId.tbl")
+										{
+											 unlink ("$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$subjectId-$queryId.tbl"); #delete old alignments
+										}
+									}
+								}
+							}
+							elsif(-d "$dir/$file")
+							{
+								unshift @dirs, "$dir/$file";
+							}
+						}
+					}while (@dirs);
 				}
 
-				my $subject = $dbh->prepare("SELECT subject FROM alignment GROUP BY subject");
-				$subject->execute();
-				while (my @subject =  $subject->fetchrow_array())
-				{
-					$sequenceIds->{$subject[0]} = 1;
-				}
-				for (keys %{$sequenceIds})
-				{
-					my $sequence = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-					$sequence->execute($_);
-					unless ($sequence->rows > 0)
-					{
-						my $deleteAlignment=$dbh->do("DELETE FROM alignment WHERE query = $_ OR subject = $_");
-					}
-				}
 				#
 				#delete comment
 				my $commentIds;
@@ -404,8 +443,57 @@ END
 				else
 				{
 					my $deleteSequence=$dbh->do("DELETE FROM matrix WHERE id = $itemId");
-					my $deleteAlignment=$dbh->do("DELETE FROM alignment WHERE query = $itemId OR subject = $itemId");
-				
+					my $queryDir;
+					for (my $position = 0; $position < length($itemId); $position += 2)
+					{
+						$queryDir .= "/q". substr($itemId,$position,2);
+					}
+					if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir")
+					{
+						my @dirs;
+						push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
+
+						do{
+							my $dir = shift @dirs;
+							opendir(DIR, $dir) or die "can't opendir $dir: $!";
+							my @files = readdir(DIR);
+							closedir DIR;
+							foreach my $file (sort @files)
+							{
+								next if ($file =~ /^\./);
+								if(-f "$dir/$file")
+								{
+									if ($file =~ /(\d+)-(\d+).tbl$/)
+									{
+										unlink ("$dir/$file"); #delete old alignments
+										my $queryId = $1;
+										my $subjectId = $2;
+										my $queryDirSwitched;
+										for (my $position = 0; $position < length($subjectId); $position += 2)
+										{
+											$queryDirSwitched .= "/q". substr($subjectId,$position,2);
+										}
+
+										my $subjectDirSwitched;
+										for (my $position = 0; $position < length($queryId); $position += 2)
+										{
+											$subjectDirSwitched .= "/s". substr($queryId,$position,2);
+										}
+
+										if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$subjectId-$queryId.tbl")
+										{
+											unlink ("$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$subjectId-$queryId.tbl"); #delete old alignments
+										}
+									}
+								}
+								elsif(-d "$dir/$file")
+								{
+									unshift @dirs, "$dir/$file";
+								}
+							}
+						}while (@dirs);
+					}
+
 					if ($item[3] eq '99' )
 					{
 						my $genome=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -484,7 +572,56 @@ END
 				$genomeSequence->execute();
 				while(my @genomeSequence = $genomeSequence->fetchrow_array())
 				{
-					my $deleteAlignment=$dbh->do("DELETE FROM alignment WHERE query = $genomeSequence[0] OR subject = $genomeSequence[0]");
+					my $queryDir;
+					for (my $position = 0; $position < length($genomeSequence[0]); $position += 2)
+					{
+						$queryDir .= "/q". substr($genomeSequence[0],$position,2);
+					}
+					if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir")
+					{
+						my @dirs;
+						push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
+
+						do{
+							my $dir = shift @dirs;
+							opendir(DIR, $dir) or die "can't opendir $dir: $!";
+							my @files = readdir(DIR);
+							closedir DIR;
+							foreach my $file (sort @files)
+							{
+								next if ($file =~ /^\./);
+								if(-f "$dir/$file")
+								{
+									if ($file =~ /(\d+)-(\d+).tbl$/)
+									{
+										unlink ("$dir/$file"); #delete old alignments
+										my $queryId = $1;
+										my $subjectId = $2;
+										my $queryDirSwitched;
+										for (my $position = 0; $position < length($subjectId); $position += 2)
+										{
+											$queryDirSwitched .= "/q". substr($subjectId,$position,2);
+										}
+
+										my $subjectDirSwitched;
+										for (my $position = 0; $position < length($queryId); $position += 2)
+										{
+											$subjectDirSwitched .= "/s". substr($queryId,$position,2);
+										}
+
+										if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$subjectId-$queryId.tbl")
+										{
+											unlink ("$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$subjectId-$queryId.tbl"); #delete old alignments
+										}
+									}
+								}
+								elsif(-d "$dir/$file")
+								{
+									unshift @dirs, "$dir/$file";
+								}
+							}
+						}while (@dirs);
+					}
 				}
 				my $deleteGenomeSequence = $dbh->do("DELETE FROM matrix WHERE container LIKE 'sequence' AND (o = 99 OR o = 97) AND x = $itemId"); # both sequence and piece
 				my $deleteAgp=$dbh->do("DELETE FROM matrix WHERE container LIKE 'agp' AND x = $itemId");

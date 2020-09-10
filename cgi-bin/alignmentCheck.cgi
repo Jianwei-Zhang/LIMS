@@ -178,73 +178,71 @@ END
 			{
 				$queryDir .= "/q". substr($getSequenceA[0],$position,2);
 			}
-
-			my @dirs;
-			push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
-			my @dirFile;
-
-			do{
-				my $dir = shift @dirs;
-				opendir(DIR, $dir) or die "can't opendir $dir: $!";
-				my @files = readdir(DIR);
-				closedir DIR;
-				foreach my $file (sort @files)
-				{
-					next if ($file =~ /^\./);
-					if(-f "$dir/$file")
-					{
-						push @dirFile, "$dir/$file";
-					}
-					elsif(-d "$dir/$file")
-					{
-						push @dirFile, "$dir/$file";
-						unshift @dirs, "$dir/$file";
-					}
-				}
-			}while (@dirs);
-
-			foreach my $file (sort @dirFile)
+			if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir")
 			{
-				my $getSequenceBline;
-				open (TBL, $file) or die "can't open file: $file";
-				while(<TBL>)
-				{
-					/^#/ and next;
-					my @hit = split("\t",$_);
-					next if ($hit[12] > 0);
-					my $direction = ($hit[8] < $hit[9]) ? "+":"-";
-					$hit[3] = commify($hit[3]);
-					unless (exists $getSequenceBline->{$hit[1]})
+				my @dirs;
+				push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
+
+				do{
+					my $dir = shift @dirs;
+					opendir(DIR, $dir) or die "can't opendir $dir: $!";
+					my @files = readdir(DIR);
+					closedir DIR;
+					foreach my $file (sort @files)
 					{
-						my $getSequenceB = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-						$getSequenceB->execute($hit[1]);
-						@{$getSequenceBline->{$hit[1]}} = $getSequenceB->fetchrow_array();
-						$getSequenceBline->{$hit[1]}[5] = commify($getSequenceBline->{$hit[1]}[5]);
+						next if ($file =~ /^\./);
+						if(-f "$dir/$file")
+						{
+							if ($file =~ /(\d+)-(\d+).tbl$/)
+							{
+								my $getSequenceBline;
+								open (TBL, "$dir/$file") or die "can't open file: $dir/$file";
+								while(<TBL>)
+								{
+									/^#/ and next;
+									my @hit = split("\t",$_);
+									next if ($hit[12] > 0);
+									my $direction = ($hit[8] < $hit[9]) ? "+":"-";
+									$hit[3] = commify($hit[3]);
+									unless (exists $getSequenceBline->{$hit[1]})
+									{
+										my $getSequenceB = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+										$getSequenceB->execute($hit[1]);
+										@{$getSequenceBline->{$hit[1]}} = $getSequenceB->fetchrow_array();
+										$getSequenceBline->{$hit[1]}[5] = commify($getSequenceBline->{$hit[1]}[5]);
+									}
+									next if ($filter && ($getSequenceA[2] eq $getSequenceBline->{$hit[1]}[2]));
+									$hit[6] = commify($hit[6]);
+									$hit[7] = commify($hit[7]);
+									$hit[8] = commify($hit[8]);
+									$hit[9] = commify($hit[9]);
+									$hit[6] = "<a class='ui-state-error-text' title='Seq End'>$hit[6]</a>" if($hit[6] eq 1 || $hit[6] eq $getSequenceA[5]);
+									$hit[7] = "<a class='ui-state-error-text' title='Seq End'>$hit[7]</a>" if($hit[7] eq 1 || $hit[7] eq $getSequenceA[5]);
+									$hit[8] = "<a class='ui-state-error-text' title='Seq End'>$hit[8]</a>" if($hit[8] eq 1 || $hit[8] eq $getSequenceBline->{$hit[3]}[5]);
+									$hit[9] = "<a class='ui-state-error-text' title='Seq End'>$hit[9]</a>" if($hit[9] eq 1 || $hit[9] eq $getSequenceBline->{$hit[3]}[5]);
+									print ALN "<tr>
+										<td><a onclick='closeDialog();openDialog(\"seqView.cgi?seqId=$getSequenceA[0]\")' title='View this sequence'>$seqType{$getSequenceA[3]}</a> ($getSequenceA[4]) $bacAssignType{$getSequenceA[7]}</td>
+										<td>$getSequenceA[5]</td>
+										<td><a onclick='closeDialog();openDialog(\"seqView.cgi?seqId=$getSequenceBline->{$hit[1]}[0]\")' title='View this sequence'>$getSequenceBline->{$hit[1]}[2]</a> $seqType{$getSequenceBline->{$hit[1]}[3]} ($getSequenceBline->{$hit[1]}[4]) $bacAssignType{$getSequenceBline->{$hit[1]}[7]}</td>
+										<td>$getSequenceBline->{$hit[1]}[5]</td>
+										<td><a title='E-value:$hit[10] \nBit-score:$hit[11]'>$hit[2]</a></td>
+										<td>$hit[3]</td>
+										<td>$hit[6]</td>
+										<td>$hit[7]</td>
+										<td>$direction</td>
+										<td>$hit[8]</td>
+										<td>$hit[9]</td>
+										</tr>";
+								}
+								close(TBL);
+							}
+						}
+						elsif(-d "$dir/$file")
+						{
+							unshift @dirs, "$dir/$file";
+						}
 					}
-					next if ($filter && ($getSequenceA[2] eq $getSequenceBline->{$hit[1]}[2]));
-					$hit[6] = commify($hit[6]);
-					$hit[7] = commify($hit[7]);
-					$hit[8] = commify($hit[8]);
-					$hit[9] = commify($hit[9]);
-					$hit[6] = "<a class='ui-state-error-text' title='Seq End'>$hit[6]</a>" if($hit[6] eq 1 || $hit[6] eq $getSequenceA[5]);
-					$hit[7] = "<a class='ui-state-error-text' title='Seq End'>$hit[7]</a>" if($hit[7] eq 1 || $hit[7] eq $getSequenceA[5]);
-					$hit[8] = "<a class='ui-state-error-text' title='Seq End'>$hit[8]</a>" if($hit[8] eq 1 || $hit[8] eq $getSequenceBline->{$hit[3]}[5]);
-					$hit[9] = "<a class='ui-state-error-text' title='Seq End'>$hit[9]</a>" if($hit[9] eq 1 || $hit[9] eq $getSequenceBline->{$hit[3]}[5]);
-					print ALN "<tr>
-						<td><a onclick='closeDialog();openDialog(\"seqView.cgi?seqId=$getSequenceA[0]\")' title='View this sequence'>$seqType{$getSequenceA[3]}</a> ($getSequenceA[4]) $bacAssignType{$getSequenceA[7]}</td>
-						<td>$getSequenceA[5]</td>
-						<td><a onclick='closeDialog();openDialog(\"seqView.cgi?seqId=$getSequenceBline->{$hit[1]}[0]\")' title='View this sequence'>$getSequenceBline->{$hit[1]}[2]</a> $seqType{$getSequenceBline->{$hit[1]}[3]} ($getSequenceBline->{$hit[1]}[4]) $bacAssignType{$getSequenceBline->{$hit[1]}[7]}</td>
-						<td>$getSequenceBline->{$hit[1]}[5]</td>
-						<td><a title='E-value:$hit[10] \nBit-score:$hit[11]'>$hit[2]</a></td>
-						<td>$hit[3]</td>
-						<td>$hit[6]</td>
-						<td>$hit[7]</td>
-						<td>$direction</td>
-						<td>$hit[8]</td>
-						<td>$hit[9]</td>
-						</tr>";
-				}
-				close(TBL);
+				}while (@dirs);
 			}
 
 			$alignmentCheckFormUrl .= "&seqOne=$querySeq";

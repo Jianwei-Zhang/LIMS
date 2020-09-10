@@ -190,7 +190,56 @@ END
 							$genomeSequence->execute();
 							while(my @genomeSequence = $genomeSequence->fetchrow_array())
 							{
-								my $deleteAlignment=$dbh->do("DELETE FROM alignment WHERE query = $genomeSequence[0] OR subject = $genomeSequence[0]");
+								my $queryDir;
+								for (my $position = 0; $position < length($genomeSequence[0]); $position += 2)
+								{
+									$queryDir .= "/q". substr($genomeSequence[0],$position,2);
+								}
+								if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir")
+								{
+									my @dirs;
+									push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
+
+									do{
+										my $dir = shift @dirs;
+										opendir(DIR, $dir) or die "can't opendir $dir: $!";
+										my @files = readdir(DIR);
+										closedir DIR;
+										foreach my $file (sort @files)
+										{
+											next if ($file =~ /^\./);
+											if(-f "$dir/$file")
+											{
+												if ($file =~ /(\d+)-(\d+).tbl$/)
+												{
+													unlink ("$dir/$file"); #delete old alignments
+													my $queryId = $1;
+													my $subjectId = $2;
+													my $queryDirSwitched;
+													for (my $position = 0; $position < length($subjectId); $position += 2)
+													{
+														$queryDirSwitched .= "/q". substr($subjectId,$position,2);
+													}
+
+													my $subjectDirSwitched;
+													for (my $position = 0; $position < length($queryId); $position += 2)
+													{
+														$subjectDirSwitched .= "/s". substr($queryId,$position,2);
+													}
+
+													if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$subjectId-$queryId.tbl")
+													{
+														 unlink ("$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$subjectId-$queryId.tbl"); #delete old alignments
+													}
+												}
+											}
+											elsif(-d "$dir/$file")
+											{
+												unshift @dirs, "$dir/$file";
+											}
+										}
+									}while (@dirs);
+								}
 							}
 							my $deleteGenomeSequence = $dbh->do("DELETE FROM matrix WHERE container LIKE 'sequence' AND (o = 99 OR o = 97) AND x = $genomeId");
 						}
