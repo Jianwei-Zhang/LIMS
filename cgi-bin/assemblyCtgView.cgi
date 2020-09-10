@@ -17,9 +17,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $svg;
 my $assemblyCtgId = param ('assemblyCtgId') || '';
 my $scrollLeft = param ('scrollLeft') || '0';
@@ -436,9 +433,6 @@ if ($assemblyCtgId)
 
     	if($preSeq) #alignment
     	{
-    		my $alignments = $dbh->prepare("SELECT * FROM alignment WHERE query = ? AND subject = ? AND hidden < 1");
-			$alignments->execute($assemblySequenceId->{$preSeq},$assemblySequenceId->{$currentSeq});
-
 			my $preY = 0;
 			my $currentY = 0;
 			if($assemblySeqCol->{$preSeq} < $assemblySeqCol->{$currentSeq})
@@ -451,33 +445,50 @@ if ($assemblyCtgId)
 				$preY = $barY + ($barHeight + $barSpacing) * $assemblySeqCol->{$preSeq} - 1;
 				$currentY =  $barY + ($barHeight + $barSpacing) * $assemblySeqCol->{$currentSeq} + $barHeight + 1;
 			}
-			
-			while (my @alignments = $alignments->fetchrow_array())
+
+
+			my $queryDir;
+			for (my $position = 0; $position < length($assemblySequenceId->{$preSeq}); $position += 2)
 			{
-				next if ($alignments[5] < $alignmentLength); #skip if alignment shorter than alignmentLength
+				$queryDir .= "/q". substr($assemblySequenceId->{$preSeq},$position,2);
+			}
+			my $subjectDir;
+			for (my $position = 0; $position < length($assemblySequenceId->{$currentSeq}); $position += 2)
+			{
+				$subjectDir .= "/s". substr($assemblySequenceId->{$currentSeq},$position,2);
+			}
+			my $alignmentCount = 0;
+			open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$preSeq}-$assemblySequenceId->{$currentSeq}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$preSeq}-$assemblySequenceId->{$currentSeq}.tbl";
+			while(<TBL>)
+			{
+				/^#/ and next;
+				$alignmentCount++;
+				my @alignments = split("\t",$_);
+				next if ($alignments[12] > 0);
+				next if ($alignments[3] < $alignmentLength); #skip if alignment shorter than alignmentLength
 				my $preXOne = 0;
 				my $preXTwo = 0;
 				if($assemblySeqOrient->{$preSeq} eq "+")
 				{
-					$preXOne = $margin + ($assemblySeqLeftEnd->{$preSeq} + $alignments[8] - 1) / $pixelUnit;
-					$preXTwo = $margin + ($assemblySeqLeftEnd->{$preSeq} + $alignments[9] - 1) / $pixelUnit;
+					$preXOne = $margin + ($assemblySeqLeftEnd->{$preSeq} + $alignments[6] - 1) / $pixelUnit;
+					$preXTwo = $margin + ($assemblySeqLeftEnd->{$preSeq} + $alignments[7] - 1) / $pixelUnit;
 				}
 				else
 				{
-					$preXOne = $margin + ($assemblySeqRightEnd->{$preSeq} - $alignments[8] + 1) / $pixelUnit;
-					$preXTwo = $margin + ($assemblySeqRightEnd->{$preSeq} - $alignments[9] + 1) / $pixelUnit;
+					$preXOne = $margin + ($assemblySeqRightEnd->{$preSeq} - $alignments[6] + 1) / $pixelUnit;
+					$preXTwo = $margin + ($assemblySeqRightEnd->{$preSeq} - $alignments[7] + 1) / $pixelUnit;
 				}
 				my $currentXOne = 0;
 				my $currentXTwo = 0;
 				if($assemblySeqOrient->{$currentSeq} eq "+")
 				{
-					$currentXOne = $margin + ($assemblySeqLeftEnd->{$currentSeq} + $alignments[10] - 1) / $pixelUnit;
-					$currentXTwo = $margin + ($assemblySeqLeftEnd->{$currentSeq} + $alignments[11] - 1) / $pixelUnit;
+					$currentXOne = $margin + ($assemblySeqLeftEnd->{$currentSeq} + $alignments[8] - 1) / $pixelUnit;
+					$currentXTwo = $margin + ($assemblySeqLeftEnd->{$currentSeq} + $alignments[9] - 1) / $pixelUnit;
 				}
 				else
 				{
-					$currentXOne = $margin + ($assemblySeqRightEnd->{$currentSeq} - $alignments[10] + 1) / $pixelUnit;
-					$currentXTwo = $margin + ($assemblySeqRightEnd->{$currentSeq} - $alignments[11] + 1) / $pixelUnit;
+					$currentXOne = $margin + ($assemblySeqRightEnd->{$currentSeq} - $alignments[8] + 1) / $pixelUnit;
+					$currentXTwo = $margin + ($assemblySeqRightEnd->{$currentSeq} - $alignments[9] + 1) / $pixelUnit;
 				}		
 				my $xv = [$preXOne,$preXTwo,$currentXTwo,$currentXOne];
 				my $yv = [$preY,$preY,$currentY,$currentY];
@@ -488,19 +499,20 @@ if ($assemblyCtgId)
 				);
 				$assemblyCtgSeqAlignment->polygon(
 					%$points,
-					id=>$alignments[0],
-					onclick => "closeDialog();openDialog('alignmentView.cgi?alignmentId=$alignments[0]')",
+					id=>$alignments[0].$alignments[1].$alignmentCount,
+					onclick => "closeDialog();openDialog('alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount')",
 					class=>'hasmenuForAlignment',
 					style=>{ stroke => 'red',
 						fill => 'yellow',
 						opacity => 0.5
 						},
-					'overlap-url' => "assemblyCtgOverlap.cgi?assemblyCtgId=$assemblyCtgId&alignmentId=$alignments[0]&scrollLeft=$preXOne",
-					'hide-url' => "assemblyAlignmentHide.cgi?alignmentId=$alignments[0]&assemblyCtgId=$assemblyCtgId&scrollLeft=$preXOne",
-					'view-url' => "alignmentView.cgi?alignmentId=$alignments[0]",
+					'overlap-url' => "assemblyCtgOverlap.cgi?assemblyCtgId=$assemblyCtgId&alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&scrollLeft=$preXOne",
+					'hide-url' => "assemblyAlignmentHide.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&assemblyCtgId=$assemblyCtgId&scrollLeft=$preXOne",
+					'view-url' => "alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount",
 					'move-url' => "assemblyCtgEdit.cgi?assemblyCtgId=$assemblyCtgId&scrollLeft=$preXOne"
 				);
 			}
+			close(TBL);
 		}
     	$assemblySeqMaxEnd = $assemblySeqRightEnd->{$currentSeq} if($assemblySeqMaxEnd < $assemblySeqRightEnd->{$currentSeq});
  
@@ -653,6 +665,9 @@ if ($assemblyCtgId)
 	</div>
 	</div>
 	";
+
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$assemblyCtgDetails/$assemblyCtgDetails/g;
 	$html =~ s/\$dialogWidth/$dialogWidth/g;
 	$html =~ s/\$assemblyCtgId/$assemblyCtgId/g;

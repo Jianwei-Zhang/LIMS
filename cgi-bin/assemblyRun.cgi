@@ -347,9 +347,17 @@ END
 							if($assemblySeqCtg->{$preSeq} ne $assemblySeqCtg->{$eachFpcSeq})
 							{
 								#4 check overlap, if not overlapped, do nothing; if yes, go to 5
-								my $getAlignment = $dbh->prepare("SELECT * FROM alignment WHERE query = ? AND subject = ?");
-								$getAlignment->execute($preSeq,$eachFpcSeq);
-								if($getAlignment->rows > 0)
+								my $queryDir;
+								for (my $position = 0; $position < length($preSeq); $position += 2)
+								{
+									$queryDir .= "/q". substr($preSeq,$position,2);
+								}
+								my $subjectDir;
+								for (my $position = 0; $position < length($eachFpcSeq); $position += 2)
+								{
+									$subjectDir .= "/s". substr($eachFpcSeq,$position,2);
+								}
+								if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$getSequenceA[0]$preSeq-$eachFpcSeq.tbl")
 								{
 									#5 merge two contigs;
 									my $assemblyPreCtg=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -504,14 +512,27 @@ END
 						my $coveredLength = 0;
 						if($sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}} <= $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}})
 						{
-							my $getAlignment = $dbh->prepare("SELECT * FROM alignment WHERE query = ? AND subject = ? ORDER BY id");
-							$getAlignment->execute($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]},$sequenceIdOfAssemblySeq->{$seqInCtg[$i]});
-							while (my @getAlignment = $getAlignment->fetchrow_array())
+							my $queryDir;
+							for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}); $position += 2)
 							{
-								$startFound = 1 if ($getAlignment[8] == 1);
-								$endFound = 1 if ($getAlignment[9] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}});
-								$coveredLength += $getAlignment[9] - $getAlignment[8] + 1;
+								$queryDir .= "/q". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]},$position,2);
 							}
+							my $subjectDir;
+							for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$seqInCtg[$i]}); $position += 2)
+							{
+								$subjectDir .= "/s". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i]},$position,2);
+							}
+							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}.tbl";
+							while(<TBL>)
+							{
+								/^#/ and next;
+								my @getAlignment = split("\t",$_);
+								$startFound = 1 if ($getAlignment[6] == 1);
+								$endFound = 1 if ($getAlignment[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}});
+								$coveredLength += $getAlignment[7] - $getAlignment[6] + 1;
+							}
+							close(TBL);
+
 							if ($startFound > 0 && $endFound > 0 && $coveredLength / $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}} >= 0.99)
 							{
 								$assemblyMultiCtgList[8] =~ s/\($seqInCtg[$i-1]\)/-($seqInCtg[$i-1])/g;
@@ -522,14 +543,26 @@ END
 						}
 						else
 						{
-							my $getAlignment = $dbh->prepare("SELECT * FROM alignment WHERE query = ? AND subject = ? ORDER BY id");
-							$getAlignment->execute($sequenceIdOfAssemblySeq->{$seqInCtg[$i]},$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]});
-							while (my @getAlignment = $getAlignment->fetchrow_array())
+							my $queryDir;
+							for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$seqInCtg[$i]}); $position += 2)
 							{
-								$startFound = 1 if ($getAlignment[8] == 1);
-								$endFound = 1 if ($getAlignment[9] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
-								$coveredLength += $getAlignment[9] - $getAlignment[8] + 1;
+								$queryDir .= "/q". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i]},$position,2);
 							}
+							my $subjectDir;
+							for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}); $position += 2)
+							{
+								$subjectDir .= "/s". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]},$position,2);
+							}
+							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl";
+							while(<TBL>)
+							{
+								/^#/ and next;
+								my @getAlignment = split("\t",$_);
+								$startFound = 1 if ($getAlignment[6] == 1);
+								$endFound = 1 if ($getAlignment[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
+								$coveredLength += $getAlignment[7] - $getAlignment[6] + 1;
+							}
+							close(TBL);
 							if ($startFound > 0 && $endFound > 0 && $coveredLength / $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}} >= 0.99)
 							{
 								$assemblyMultiCtgList[8] =~ s/\($seqInCtg[$i]\)/-($seqInCtg[$i])/g;
@@ -556,44 +589,81 @@ END
 					my $totalSeqInCtg = @seqInCtg;
 					for (my $i = 1; $i < $totalSeqInCtg - 1; $i++)
 					{
-						my $getAlignment = $dbh->prepare("SELECT * FROM alignment WHERE query = ? AND subject = ? ORDER BY id");
-						$getAlignment->execute($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]},$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]});
-						if ($getAlignment->rows > 0)
+						my $queryDir;
+						for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}); $position += 2)
+						{
+							$queryDir .= "/q". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]},$position,2);
+						}
+						my $subjectDir;
+						for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}); $position += 2)
+						{
+							$subjectDir .= "/s". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]},$position,2);
+						}
+						if (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl")
 						{
 							my $goodEndFound = 0;
-							while (my @getAlignment = $getAlignment->fetchrow_array())
+							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl";
+							while(<TBL>)
 							{
-								if($getAlignment[10] < $getAlignment[11])
+								/^#/ and next;
+								my @getAlignment = split("\t",$_);
+								if($getAlignment[8] < $getAlignment[9])
 								{
-									$goodEndFound = 1 if ($getAlignment[8] == 1 || $getAlignment[9] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}} || $getAlignment[10] == 1 || $getAlignment[11] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}});
+									$goodEndFound = 1 if ($getAlignment[6] == 1 || $getAlignment[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}} || $getAlignment[8] == 1 || $getAlignment[9] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}});
 								}
 								else
 								{
-									$goodEndFound = 1 if ($getAlignment[8] == 1 || $getAlignment[9] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}} || $getAlignment[10] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}} || $getAlignment[11] == 1);
+									$goodEndFound = 1 if ($getAlignment[6] == 1 || $getAlignment[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}} || $getAlignment[8] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}} || $getAlignment[9] == 1);
 								}
 							}
+							close(TBL);
 							if($goodEndFound)
 							{
 								my $startFound = 0;
 								my $endFound = 0;
 								my $coveredLength = 0;
-								my $getAlignmentPre = $dbh->prepare("SELECT * FROM alignment WHERE query = ? AND subject = ? ORDER BY id");
-								$getAlignmentPre->execute($sequenceIdOfAssemblySeq->{$seqInCtg[$i]},$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]});
-								while (my @getAlignmentPre = $getAlignmentPre->fetchrow_array())
-								{
-									$startFound = 1 if ($getAlignmentPre[8] == 1);
-									$endFound = 1 if ($getAlignmentPre[9] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
-									$coveredLength += $getAlignmentPre[9] - $getAlignmentPre[8] + 1;
-								}
-								my $getAlignmentNext = $dbh->prepare("SELECT * FROM alignment WHERE query = ? AND subject = ? ORDER BY id");
-								$getAlignmentNext->execute($sequenceIdOfAssemblySeq->{$seqInCtg[$i]},$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]});
-								while (my @getAlignmentNext = $getAlignmentNext->fetchrow_array())
-								{
-									$startFound = 1 if ($getAlignmentNext[8] == 1);
-									$endFound = 1 if ($getAlignmentNext[9] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
-									$coveredLength += $getAlignmentNext[9] - $getAlignmentNext[8] + 1;
-								}
 
+								my $queryDirPre;
+								for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$seqInCtg[$i]}); $position += 2)
+								{
+									$queryDirPre .= "/q". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i]},$position,2);
+								}
+								my $subjectDirPre;
+								for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}); $position += 2)
+								{
+									$subjectDirPre .= "/s". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]},$position,2);
+								}
+								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirPre$subjectDirPre/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirPre$subjectDirPre/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl";
+								while(<TBL>)
+								{
+									/^#/ and next;
+									my @getAlignmentPre = split("\t",$_);
+									$startFound = 1 if ($getAlignmentPre[6] == 1);
+									$endFound = 1 if ($getAlignmentPre[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
+									$coveredLength += $getAlignmentPre[7] - $getAlignmentPre[6] + 1;
+								}
+								close(TBL);
+
+								my $queryDirNext;
+								for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$seqInCtg[$i]}); $position += 2)
+								{
+									$queryDirNext .= "/q". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i]},$position,2);
+								}
+								my $subjectDirNext;
+								for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}); $position += 2)
+								{
+									$subjectDirNext .= "/s". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]},$position,2);
+								}
+								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirNext$subjectDirNext/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirNext$subjectDirNext/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl";
+								while(<TBL>)
+								{
+									/^#/ and next;
+									my @getAlignmentNext = split("\t",$_);
+									$startFound = 1 if ($getAlignmentNext[6] == 1);
+									$endFound = 1 if ($getAlignmentNext[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
+									$coveredLength += $getAlignmentNext[7] - $getAlignmentNext[6] + 1;
+								}
+								close(TBL);
 								if ($startFound > 0 && $endFound > 0 && $coveredLength / $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}} > 1)
 								{
 									$assemblyMultiCtgList[8] =~ s/\($seqInCtg[$i]\)/-($seqInCtg[$i])/g;
@@ -642,25 +712,38 @@ END
 					my @currentAssemblySeq = $currentAssemblySeq->fetchrow_array();
 
 					my $twoSeqDirection;
-					my $getAlignmentTwo = $dbh->prepare("SELECT * FROM alignment WHERE perc_indentity >= $identityEndToEnd AND align_length >= $minOverlapEndToEnd AND query = ? AND subject = ?");
-					$getAlignmentTwo->execute($preAssemblySeq[5],$currentAssemblySeq[5]);
-					while (my @getAlignmentTwo = $getAlignmentTwo->fetchrow_array())
+					my $queryDirTwo;
+					for (my $position = 0; $position < length($preAssemblySeq[5]); $position += 2)
 					{
+						$queryDirTwo .= "/q". substr($preAssemblySeq[5],$position,2);
+					}
+					my $subjectDirTwo;
+					for (my $position = 0; $position < length($currentAssemblySeq[5]); $position += 2)
+					{
+						$subjectDirTwo .= "/s". substr($currentAssemblySeq[5],$position,2);
+					}
+					open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo$subjectDirTwo/$preAssemblySeq[5]-$currentAssemblySeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo$subjectDirTwo/$preAssemblySeq[5]-$currentAssemblySeq[5].tbl";
+					while(<TBL>)
+					{
+						/^#/ and next;
+						my @getAlignmentTwo = split("\t",$_);
+
 						unless(exists $twoSeqDirection->{$preAssemblySeq[5]}->{$currentAssemblySeq[5]})
 						{
-							$twoSeqDirection->{$preAssemblySeq[5]}->{$currentAssemblySeq[5]} = ($getAlignmentTwo[10] < $getAlignmentTwo[11]) ? 1 : -1;
+							$twoSeqDirection->{$preAssemblySeq[5]}->{$currentAssemblySeq[5]} = ($getAlignmentTwo[8] < $getAlignmentTwo[9]) ? 1 : -1;
 						}
-						if($getAlignmentTwo[8] == 1)
+						if($getAlignmentTwo[6] == 1)
 						{
 							$orientation->{$preAssemblySeqId} = -1;
 							last;
 						}
-						if($getAlignmentTwo[9] == $preAssemblySeq[6])
+						if($getAlignmentTwo[7] == $preAssemblySeq[6])
 						{
 							$orientation->{$preAssemblySeqId} = 1;
 							last;
 						}
 					}
+					close(TBL);
 					if ($firstAssemblySeqFlag)
 					{
 						my $updatePreAssemblySeq=$dbh->do("UPDATE matrix SET barcode = $orientation->{$preAssemblySeqId} WHERE id = $preAssemblySeqId");
@@ -721,27 +804,36 @@ END
 						my $currentCtgSeq=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 						$currentCtgSeq->execute($currentCtgSeqId);
 						my @currentCtgSeq = $currentCtgSeq->fetchrow_array();
-					 
-						my $getAlignment = $dbh->prepare("SELECT * FROM alignment WHERE perc_indentity >= $identityEndToEnd AND align_length >= $minOverlapEndToEnd AND query = ? AND subject = ?");
-						$getAlignment->execute($preCtgSeq[5],$currentCtgSeq[5]);
-					 
-						if($getAlignment->rows > 0)
+						my $queryDir;
+						for (my $position = 0; $position < length($preCtgSeq[5]); $position += 2)
+						{
+							$queryDir .= "/q". substr($preCtgSeq[5],$position,2);
+						}
+						my $subjectDir;
+						for (my $position = 0; $position < length($currentCtgSeq[5]); $position += 2)
+						{
+							$subjectDir .= "/s". substr($currentCtgSeq[5],$position,2);
+						}
+						if (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preCtgSeq[5]-$currentCtgSeq[5].tbl")
 						{
 							my $goodEndFoundA = 0;
 							my $goodEndFoundB = 0;
-							while (my @getAlignment = $getAlignment->fetchrow_array())
+							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preCtgSeq[5]-$currentCtgSeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preCtgSeq[5]-$currentCtgSeq[5].tbl";
+							while(<TBL>)
 							{
-								$goodEndFoundA = 1 if ($getAlignment[8] == 1 || $getAlignment[9] == $preCtgSeq[6]);
-								if($getAlignment[10] < $getAlignment[11])
+								/^#/ and next;
+								my @getAlignment = split("\t",$_);
+								$goodEndFoundA = 1 if ($getAlignment[6] == 1 || $getAlignment[7] == $preCtgSeq[6]);
+								if($getAlignment[8] < $getAlignment[9])
 								{
-									$goodEndFoundB = 1 if ($getAlignment[10] == 1 || $getAlignment[11] == $currentCtgSeq[6]);
+									$goodEndFoundB = 1 if ($getAlignment[8] == 1 || $getAlignment[9] == $currentCtgSeq[6]);
 								}
 								else
 								{	
-									 $goodEndFoundB = 1 if ($getAlignment[10] == $currentCtgSeq[6] || $getAlignment[11] == 1);
+									 $goodEndFoundB = 1 if ($getAlignment[8] == $currentCtgSeq[6] || $getAlignment[9] == 1);
 								}
 							}
-
+							close(TBL);
 							if($goodEndFoundA && $goodEndFoundB)
 							{
 								if($preCtg < $ctgToChr[2])
@@ -764,7 +856,7 @@ END
 									delete $ctgSeq->{$preCtg};
 							   }
 							}
-						}    
+						}
 					}
 					$preCtg=$ctgToChr[2] if ($setPreCtg);
 				}
@@ -802,25 +894,36 @@ END
 						$eachSingletonCtgSeqB->execute($singletonCtgSeqIdB);
 						my @eachSingletonCtgSeqB = $eachSingletonCtgSeqB->fetchrow_array();
 
-						my $getAlignment = $dbh->prepare("SELECT * FROM alignment WHERE perc_indentity >= $identityEndToEnd AND align_length >= $minOverlapEndToEnd AND query = ? AND subject = ?");
-						$getAlignment->execute($eachSingletonCtgSeqA[5],$eachSingletonCtgSeqB[5]);
-						if($getAlignment->rows > 0)
+						my $queryDir;
+						for (my $position = 0; $position < length($eachSingletonCtgSeqA[5]); $position += 2)
+						{
+							$queryDir .= "/q". substr($eachSingletonCtgSeqA[5],$position,2);
+						}
+						my $subjectDir;
+						for (my $position = 0; $position < length($eachSingletonCtgSeqB[5]); $position += 2)
+						{
+							$subjectDir .= "/s". substr($eachSingletonCtgSeqB[5],$position,2);
+						}
+						if (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$eachSingletonCtgSeqA[5]-$eachSingletonCtgSeqB[5].tbl")
 						{
 							my $goodEndFoundA = 0;
 							my $goodEndFoundB = 0;
-							while (my @getAlignment = $getAlignment->fetchrow_array())
+							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$eachSingletonCtgSeqA[5]-$eachSingletonCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preCtgSeq[5]-$eachSingletonCtgSeqB[5].tbl";
+							while(<TBL>)
 							{
-								$goodEndFoundA = 1 if ($getAlignment[8] == 1 || $getAlignment[9] == $eachSingletonCtgSeqA[6]);
-								if($getAlignment[10] < $getAlignment[11])
+								/^#/ and next;
+								my @getAlignment = split("\t",$_);
+								$goodEndFoundA = 1 if ($getAlignment[6] == 1 || $getAlignment[7] == $eachSingletonCtgSeqA[6]);
+								if($getAlignment[8] < $getAlignment[9])
 								{
-									$goodEndFoundB = 1 if ($getAlignment[10] == 1 || $getAlignment[11] == $eachSingletonCtgSeqB[6]);
+									$goodEndFoundB = 1 if ($getAlignment[8] == 1 || $getAlignment[9] == $eachSingletonCtgSeqB[6]);
 								}
 								else
 								{
-									$goodEndFoundB = 1 if ($getAlignment[10] == $eachSingletonCtgSeqB[6] || $getAlignment[11] == 1);
+									$goodEndFoundB = 1 if ($getAlignment[8] == $eachSingletonCtgSeqB[6] || $getAlignment[9] == 1);
 								}
 							}
-
+							close(TBL);
 							if($goodEndFoundA && $goodEndFoundB)
 							{
 								my $mergedName = ($eachSingletonCtgA < $eachSingletonCtgB) ? $eachSingletonCtgA : $eachSingletonCtgB;
@@ -878,25 +981,36 @@ END
 						$tailCtgSeq->execute($tailSeqId);
 						my @tailCtgSeq = $tailCtgSeq->fetchrow_array();
 
-						my $getAlignmentHead = $dbh->prepare("SELECT * FROM alignment WHERE perc_indentity >= $identityEndToEnd AND align_length >= $minOverlapEndToEnd AND query = ? AND subject = ?");
-						$getAlignmentHead->execute($eachSingletonCtgSeq[5],$headCtgSeq[5]);
-						if($getAlignmentHead->rows > 0)
+						my $queryDirHead;
+						for (my $position = 0; $position < length($eachSingletonCtgSeq[5]); $position += 2)
+						{
+							$queryDirHead .= "/q". substr($eachSingletonCtgSeq[5],$position,2);
+						}
+						my $subjectDirHead;
+						for (my $position = 0; $position < length($headCtgSeq[5]); $position += 2)
+						{
+							$subjectDirHead .= "/s". substr($headCtgSeq[5],$position,2);
+						}
+						if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirHead$subjectDirHead/$eachSingletonCtgSeq[5]-$headCtgSeq[5].tbl")
 						{
 							my $goodEndFoundA = 0;
 							my $goodEndFoundB = 0;
-							while (my @getAlignmentHead = $getAlignmentHead->fetchrow_array())
+							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirHead$subjectDirHead/$eachSingletonCtgSeq[5]-$headCtgSeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirHead$subjectDirHead/$eachSingletonCtgSeq[5]-$headCtgSeq[5].tbl";
+							while(<TBL>)
 							{
-								$goodEndFoundA = 1 if ($getAlignmentHead[8] == 1 || $getAlignmentHead[9] == $eachSingletonCtgSeq[6]);
-								if($getAlignmentHead[10] < $getAlignmentHead[11])
+								/^#/ and next;
+								my @getAlignmentHead = split("\t",$_);
+								$goodEndFoundA = 1 if ($getAlignmentHead[6] == 1 || $getAlignmentHead[7] == $eachSingletonCtgSeq[6]);
+								if($getAlignmentHead[8] < $getAlignmentHead[9])
 								{
-									$goodEndFoundB = 1 if ($getAlignmentHead[10] == 1 || $getAlignmentHead[11] == $headCtgSeq[6]);
+									$goodEndFoundB = 1 if ($getAlignmentHead[8] == 1 || $getAlignmentHead[9] == $headCtgSeq[6]);
 								}
 								else
 								{
-									$goodEndFoundB = 1 if ($getAlignmentHead[10] == $headCtgSeq[6] || $getAlignmentHead[11] == 1);
+									$goodEndFoundB = 1 if ($getAlignmentHead[8] == $headCtgSeq[6] || $getAlignmentHead[9] == 1);
 								}
 							}
-
+							close(TBL);
 							if($goodEndFoundA && $goodEndFoundB)
 							{
 								my $mergedName = ($eachSingletonCtg < $eachMultiCtg) ? $eachSingletonCtg : $eachMultiCtg;
@@ -916,29 +1030,39 @@ END
 								last;
 							}
 						}
-
 						last if ($mergeFlag);
 						next if ($tailSeqId == $headSeqId);
 
-						my $getAlignmentTail = $dbh->prepare("SELECT * FROM alignment WHERE perc_indentity >= $identityEndToEnd AND align_length >= $minOverlapEndToEnd AND query = ? AND subject = ?");
-						$getAlignmentTail->execute($eachSingletonCtgSeq[5],$tailCtgSeq[5]);
-						if($getAlignmentTail->rows > 0)
+						my $queryDirTail;
+						for (my $position = 0; $position < length($eachSingletonCtgSeq[5]); $position += 2)
+						{
+							$queryDirTail .= "/q". substr($eachSingletonCtgSeq[5],$position,2);
+						}
+						my $subjectDirTail;
+						for (my $position = 0; $position < length($tailCtgSeq[5]); $position += 2)
+						{
+							$subjectDirTail .= "/s". substr($tailCtgSeq[5],$position,2);
+						}
+						if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTail$subjectDirTail/$eachSingletonCtgSeq[5]-$tailCtgSeq[5].tbl")
 						{
 							my $goodEndFoundA = 0;
 							my $goodEndFoundB = 0;
-							while (my @getAlignmentTail = $getAlignmentTail->fetchrow_array())
+							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTail$subjectDirTail/$eachSingletonCtgSeq[5]-$tailCtgSeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTail$subjectDirTail/$eachSingletonCtgSeq[5]-$tailCtgSeq[5].tbl";
+							while(<TBL>)
 							{
-								$goodEndFoundA = 1 if ($getAlignmentTail[8] == 1 || $getAlignmentTail[9] == $eachSingletonCtgSeq[6]);
-								if($getAlignmentTail[10] < $getAlignmentTail[11])
+								/^#/ and next;
+								my @getAlignmentTail = split("\t",$_);
+								$goodEndFoundA = 1 if ($getAlignmentTail[6] == 1 || $getAlignmentTail[7] == $eachSingletonCtgSeq[6]);
+								if($getAlignmentTail[8] < $getAlignmentTail[9])
 								{
-									$goodEndFoundB = 1 if ($getAlignmentTail[10] == 1 || $getAlignmentTail[11] == $tailCtgSeq[6]);
+									$goodEndFoundB = 1 if ($getAlignmentTail[8] == 1 || $getAlignmentTail[9] == $tailCtgSeq[6]);
 								}
 								else
 								{
-									$goodEndFoundB = 1 if ($getAlignmentTail[10] == $tailCtgSeq[6] || $getAlignmentTail[11] == 1);
+									$goodEndFoundB = 1 if ($getAlignmentTail[8] == $tailCtgSeq[6] || $getAlignmentTail[9] == 1);
 								}
 							}
-
+							close(TBL);
 							if($goodEndFoundA && $goodEndFoundB)
 							{
 								my $mergedName = ($eachSingletonCtg < $eachMultiCtg) ? $eachSingletonCtg : $eachMultiCtg;
@@ -1014,25 +1138,36 @@ END
 							$tailCtgSeqB->execute($tailSeqIdB);
 							my @tailCtgSeqB = $tailCtgSeqB->fetchrow_array();
 
-							my $getAlignmentAHBH = $dbh->prepare("SELECT * FROM alignment WHERE perc_indentity >= $identityEndToEnd AND align_length >= $minOverlapEndToEnd AND query = ? AND subject = ?");
-							$getAlignmentAHBH->execute($headCtgSeqA[5],$headCtgSeqB[5]);
-							if($getAlignmentAHBH->rows > 0)
+							my $queryDirAHBH;
+							for (my $position = 0; $position < length($headCtgSeqA[5]); $position += 2)
+							{
+								$queryDirAHBH .= "/q". substr($headCtgSeqA[5],$position,2);
+							}
+							my $subjectDirAHBH;
+							for (my $position = 0; $position < length($headCtgSeqB[5]); $position += 2)
+							{
+								$subjectDirAHBH .= "/s". substr($headCtgSeqB[5],$position,2);
+							}
+							if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirAHBH$subjectDirAHBH/$headCtgSeqA[5]-$headCtgSeqB[5].tbl")
 							{
 								my $goodEndFoundA = 0;
 								my $goodEndFoundB = 0;
-								while (my @getAlignmentAHBH = $getAlignmentAHBH->fetchrow_array())
+								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirAHBH$subjectDirAHBH/$headCtgSeqA[5]-$headCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirAHBH$subjectDirAHBH/$headCtgSeqA[5]-$headCtgSeqB[5].tbl";
+								while(<TBL>)
 								{
-									$goodEndFoundA = 1 if ($getAlignmentAHBH[8] == 1 || $getAlignmentAHBH[9] == $headCtgSeqA[6]);
-									if($getAlignmentAHBH[10] < $getAlignmentAHBH[11])
+									/^#/ and next;
+									my @getAlignmentAHBH = split("\t",$_);
+									$goodEndFoundA = 1 if ($getAlignmentAHBH[6] == 1 || $getAlignmentAHBH[7] == $headCtgSeqA[6]);
+									if($getAlignmentAHBH[8] < $getAlignmentAHBH[9])
 									{
-										$goodEndFoundB = 1 if ($getAlignmentAHBH[10] == 1 || $getAlignmentAHBH[11] == $headCtgSeqB[6]);
+										$goodEndFoundB = 1 if ($getAlignmentAHBH[8] == 1 || $getAlignmentAHBH[9] == $headCtgSeqB[6]);
 									}
 									else
 									{
-										$goodEndFoundB = 1 if ($getAlignmentAHBH[10] == $headCtgSeqB[6] || $getAlignmentAHBH[11] == 1);
+										$goodEndFoundB = 1 if ($getAlignmentAHBH[8] == $headCtgSeqB[6] || $getAlignmentAHBH[9] == 1);
 									}
 								}
-
+								close(TBL);
 								if($goodEndFoundA && $goodEndFoundB)
 								{
 									$multiCtg->{$eachMultiCtgA} = join ",", (reverse split ",", $multiCtg->{$eachMultiCtgA}); #flip ctgA
@@ -1066,25 +1201,37 @@ END
 							}
 							last if($mergeFlag);
 
-							my $getAlignmentAHBT = $dbh->prepare("SELECT * FROM alignment WHERE perc_indentity >= $identityEndToEnd AND align_length >= $minOverlapEndToEnd AND query = ? AND subject = ?");
-							$getAlignmentAHBT->execute($headCtgSeqA[5],$tailCtgSeqB[5]);
-							if($getAlignmentAHBT->rows > 0)
+
+							my $queryDirAHBT;
+							for (my $position = 0; $position < length($headCtgSeqA[5]); $position += 2)
+							{
+								$queryDirAHBT .= "/q". substr($headCtgSeqA[5],$position,2);
+							}
+							my $subjectDirAHBT;
+							for (my $position = 0; $position < length($tailCtgSeqB[5]); $position += 2)
+							{
+								$subjectDirAHBT .= "/s". substr($tailCtgSeqB[5],$position,2);
+							}
+							if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirAHBT$subjectDirAHBT/$headCtgSeqA[5]-$tailCtgSeqB[5].tbl")
 							{
 								my $goodEndFoundA = 0;
 								my $goodEndFoundB = 0;
-								while (my @getAlignmentAHBT = $getAlignmentAHBT->fetchrow_array())
+								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirAHBT$subjectDirAHBT/$headCtgSeqA[5]-$tailCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirAHBT$subjectDirAHBT/$headCtgSeqA[5]-$tailCtgSeqB[5].tbl";
+								while(<TBL>)
 								{
-									$goodEndFoundA = 1 if ($getAlignmentAHBT[8] == 1 || $getAlignmentAHBT[9] == $headCtgSeqA[6]);
+									/^#/ and next;
+									my @getAlignmentAHBT = split("\t",$_);
+									$goodEndFoundA = 1 if ($getAlignmentAHBT[6] == 1 || $getAlignmentAHBT[7] == $headCtgSeqA[6]);
 									if($getAlignmentAHBT[10] < $getAlignmentAHBT[11])
 									{
-										$goodEndFoundB = 1 if ($getAlignmentAHBT[10] == 1 || $getAlignmentAHBT[11] == $tailCtgSeqB[6]);
+										$goodEndFoundB = 1 if ($getAlignmentAHBT[8] == 1 || $getAlignmentAHBT[9] == $tailCtgSeqB[6]);
 									}
 									else
 									{
-										$goodEndFoundB = 1 if ($getAlignmentAHBT[10] == $tailCtgSeqB[6] || $getAlignmentAHBT[11] == 1);
+										$goodEndFoundB = 1 if ($getAlignmentAHBT[8] == $tailCtgSeqB[6] || $getAlignmentAHBT[9] == 1);
 									}
 								}
-
+								close(TBL);
 								if($goodEndFoundA && $goodEndFoundB)
 								{
 									if($eachMultiCtgA < $eachMultiCtgB)
@@ -1109,28 +1256,38 @@ END
 									last;
 								}
 							}
-
 							last if($mergeFlag);
 
-							my $getAlignmentATBH = $dbh->prepare("SELECT * FROM alignment WHERE perc_indentity >= $identityEndToEnd AND align_length >= $minOverlapEndToEnd AND query = ? AND subject = ?");
-							$getAlignmentATBH->execute($tailCtgSeqA[5],$headCtgSeqB[5]);
-							if($getAlignmentATBH->rows > 0)
+							my $queryDirATBH;
+							for (my $position = 0; $position < length($tailCtgSeqA[5]); $position += 2)
+							{
+								$queryDirATBH .= "/q". substr($tailCtgSeqA[5],$position,2);
+							}
+							my $subjectDirATBH;
+							for (my $position = 0; $position < length($headCtgSeqB[5]); $position += 2)
+							{
+								$subjectDirATBH .= "/s". substr($headCtgSeqB[5],$position,2);
+							}
+							if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirATBH$subjectDirATBH/$tailCtgSeqA[5]-$headCtgSeqB[5].tbl")
 							{
 								my $goodEndFoundA = 0;
 								my $goodEndFoundB = 0;
-								while (my @getAlignmentATBH = $getAlignmentATBH->fetchrow_array())
+								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirATBH$subjectDirATBH/$tailCtgSeqA[5]-$headCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirATBH$subjectDirATBH/$tailCtgSeqA[5]-$headCtgSeqB[5].tbl";
+								while(<TBL>)
 								{
-									$goodEndFoundA = 1 if ($getAlignmentATBH[8] == 1 || $getAlignmentATBH[9] == $tailCtgSeqA[6]);
+									/^#/ and next;
+									my @getAlignmentATBH = split("\t",$_);
+									$goodEndFoundA = 1 if ($getAlignmentATBH[6] == 1 || $getAlignmentATBH[7] == $tailCtgSeqA[6]);
 									if($getAlignmentATBH[10] < $getAlignmentATBH[11])
 									{
-										$goodEndFoundB = 1 if ($getAlignmentATBH[10] == 1 || $getAlignmentATBH[11] == $headCtgSeqB[6]);
+										$goodEndFoundB = 1 if ($getAlignmentATBH[8] == 1 || $getAlignmentATBH[9] == $headCtgSeqB[6]);
 									}
 									else
 									{
-										$goodEndFoundB = 1 if ($getAlignmentATBH[10] == $headCtgSeqB[6] || $getAlignmentATBH[11] == 1);
+										$goodEndFoundB = 1 if ($getAlignmentATBH[8] == $headCtgSeqB[6] || $getAlignmentATBH[9] == 1);
 									}
 								}
-
+								close(TBL);
 								if($goodEndFoundA && $goodEndFoundB)
 								{
 									if($eachMultiCtgA < $eachMultiCtgB)
@@ -1157,25 +1314,36 @@ END
 							}
 							last if($mergeFlag);
 
-							my $getAlignmentATBT = $dbh->prepare("SELECT * FROM alignment WHERE perc_indentity >= $identityEndToEnd AND align_length >= $minOverlapEndToEnd AND query = ? AND subject = ?");
-							$getAlignmentATBT->execute($tailCtgSeqA[5],$tailCtgSeqB[5]);
-							if($getAlignmentATBT->rows > 0)
+							my $queryDirATBT;
+							for (my $position = 0; $position < length($tailCtgSeqA[5]); $position += 2)
+							{
+								$queryDirATBT .= "/q". substr($tailCtgSeqA[5],$position,2);
+							}
+							my $subjectDirATBT;
+							for (my $position = 0; $position < length($tailCtgSeqB[5]); $position += 2)
+							{
+								$subjectDirATBT .= "/s". substr($tailCtgSeqB[5],$position,2);
+							}
+							if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirATBT$subjectDirATBT/$tailCtgSeqA[5]-$tailCtgSeqB[5].tbl")
 							{
 								my $goodEndFoundA = 0;
 								my $goodEndFoundB = 0;
-								while (my @getAlignmentATBT = $getAlignmentATBT->fetchrow_array())
+								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirATBT$subjectDirATBT/$tailCtgSeqA[5]-$tailCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirATBT$subjectDirATBT/$tailCtgSeqA[5]-$tailCtgSeqB[5].tbl";
+								while(<TBL>)
 								{
-									$goodEndFoundA = 1 if ($getAlignmentATBT[8] == 1 || $getAlignmentATBT[9] == $tailCtgSeqA[6]);
+									/^#/ and next;
+									my @getAlignmentATBT = split("\t",$_);
+									$goodEndFoundA = 1 if ($getAlignmentATBT[6] == 1 || $getAlignmentATBT[7] == $tailCtgSeqA[6]);
 									if($getAlignmentATBT[10] < $getAlignmentATBT[11])
 									{
-										$goodEndFoundB = 1 if ($getAlignmentATBT[10] == 1 || $getAlignmentATBT[11] == $tailCtgSeqB[6]);
+										$goodEndFoundB = 1 if ($getAlignmentATBT[8] == 1 || $getAlignmentATBT[9] == $tailCtgSeqB[6]);
 									}
 									else
 									{
-										$goodEndFoundB = 1 if ($getAlignmentATBT[10] == $tailCtgSeqB[6] || $getAlignmentATBT[11] == 1);
+										$goodEndFoundB = 1 if ($getAlignmentATBT[8] == $tailCtgSeqB[6] || $getAlignmentATBT[9] == 1);
 									}
 								}
-
+								close(TBL);
 								if($goodEndFoundA && $goodEndFoundB)
 								{
 									$multiCtg->{$eachMultiCtgB} = join ",", (reverse split ",", $multiCtg->{$eachMultiCtgB}); #flip ctgB
@@ -1281,9 +1449,27 @@ END
 					$nextSequence->execute($nextAssemblySeq[5]);
 					my @nextSequence = $nextSequence->fetchrow_array();
 
-					my $getAlignment = $dbh->prepare("SELECT * FROM alignment WHERE query = ? AND subject = ? ORDER BY id LIMIT 1");
-					$getAlignment->execute($preAssemblySeq[5],$nextAssemblySeq[5]);
-					my @getAlignment = $getAlignment->fetchrow_array();
+					my $queryDir;
+					for (my $position = 0; $position < length($preAssemblySeq[5]); $position += 2)
+					{
+						$queryDir .= "/q". substr($preAssemblySeq[5],$position,2);
+					}
+					my $subjectDir;
+					for (my $position = 0; $position < length($nextAssemblySeq[5]); $position += 2)
+					{
+						$subjectDir .= "/s". substr($nextAssemblySeq[5],$position,2);
+					}
+					my @getAlignment;
+					my $alignmentCount = 0;
+					open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preAssemblySeq[5]-$nextAssemblySeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preAssemblySeq[5]-$nextAssemblySeq[5].tbl";
+					while(<TBL>)
+					{
+						/^#/ and next;
+						$alignmentCount++;
+						@getAlignment = split("\t",$_);
+						last if ($alignmentCount > 0);
+					}
+					close(TBL);
 
 					my $preSeqStartCandidate = $preSeqStart;
 					my $preSeqEndCandidate = $preSeqEnd;
@@ -1295,28 +1481,28 @@ END
 						#keep preSeq sequence
 						if($preAssemblySeq[7] > 0)
 						{
-							if ($getAlignment[10] < $getAlignment[11])
+							if ($getAlignment[8] < $getAlignment[9])
 							{
-								$preSeqEndCandidate = $getAlignment[9];
-								$nextSeqStartCandidate = $getAlignment[11] + 1;
+								$preSeqEndCandidate = $getAlignment[7];
+								$nextSeqStartCandidate = $getAlignment[9] + 1;
 							}
 							else
 							{
-								$preSeqEndCandidate = $getAlignment[9];
-								$nextSeqEndCandidate = $getAlignment[11] - 1;
+								$preSeqEndCandidate = $getAlignment[7];
+								$nextSeqEndCandidate = $getAlignment[9] - 1;
 							}
 						}
 						else
 						{
-							if ($getAlignment[10] < $getAlignment[11])
+							if ($getAlignment[8] < $getAlignment[9])
 							{
-								$preSeqStartCandidate = $getAlignment[8];
-								$nextSeqEndCandidate = $getAlignment[10] - 1;
+								$preSeqStartCandidate = $getAlignment[6];
+								$nextSeqEndCandidate = $getAlignment[8] - 1;
 							}
 							else
 							{
-								$preSeqStartCandidate = $getAlignment[8];
-								$nextSeqStartCandidate = $getAlignment[10] + 1;
+								$preSeqStartCandidate = $getAlignment[6];
+								$nextSeqStartCandidate = $getAlignment[8] + 1;
 							}
 						}
 
@@ -1334,28 +1520,28 @@ END
 							$nextSeqEndCandidate = $nextSeqEnd;
 							if($preAssemblySeq[7] > 0)
 							{
-								if ($getAlignment[10] < $getAlignment[11])
+								if ($getAlignment[8] < $getAlignment[9])
 								{
-									$preSeqEndCandidate = $getAlignment[8] - 1;
-									$nextSeqStartCandidate = $getAlignment[10];
+									$preSeqEndCandidate = $getAlignment[6] - 1;
+									$nextSeqStartCandidate = $getAlignment[8];
 								}
 								else
 								{
-									$preSeqEndCandidate = $getAlignment[8] - 1;
-									$nextSeqEndCandidate = $getAlignment[10];
+									$preSeqEndCandidate = $getAlignment[6] - 1;
+									$nextSeqEndCandidate = $getAlignment[8];
 								}
 							}
 							else
 							{
-								if ($getAlignment[10] < $getAlignment[11])
+								if ($getAlignment[8] < $getAlignment[9])
 								{
-									$preSeqStartCandidate = $getAlignment[9] + 1;
-									$nextSeqEndCandidate = $getAlignment[11];
+									$preSeqStartCandidate = $getAlignment[7] + 1;
+									$nextSeqEndCandidate = $getAlignment[9];
 								}
 								else
 								{
-									$preSeqStartCandidate = $getAlignment[9] + 1;
-									$nextSeqStartCandidate = $getAlignment[11];
+									$preSeqStartCandidate = $getAlignment[7] + 1;
+									$nextSeqStartCandidate = $getAlignment[9];
 								}
 							}
 
@@ -1375,28 +1561,28 @@ END
 						#keep nextSeq sequence
 						if($preAssemblySeq[7] > 0)
 						{
-							if ($getAlignment[10] < $getAlignment[11])
+							if ($getAlignment[8] < $getAlignment[9])
 							{
-								$preSeqEndCandidate = $getAlignment[8] - 1;
-								$nextSeqStartCandidate = $getAlignment[10];
+								$preSeqEndCandidate = $getAlignment[6] - 1;
+								$nextSeqStartCandidate = $getAlignment[8];
 							}
 							else
 							{
-								$preSeqEndCandidate = $getAlignment[8] - 1;
-								$nextSeqEndCandidate = $getAlignment[10];
+								$preSeqEndCandidate = $getAlignment[6] - 1;
+								$nextSeqEndCandidate = $getAlignment[8];
 							}
 						}
 						else
 						{
-							if ($getAlignment[10] < $getAlignment[11])
+							if ($getAlignment[8] < $getAlignment[9])
 							{
-								$preSeqStartCandidate = $getAlignment[9] + 1;
-								$nextSeqEndCandidate = $getAlignment[11];
+								$preSeqStartCandidate = $getAlignment[7] + 1;
+								$nextSeqEndCandidate = $getAlignment[9];
 							}
 							else
 							{
-								$preSeqStartCandidate = $getAlignment[9] + 1;
-								$nextSeqStartCandidate = $getAlignment[11];
+								$preSeqStartCandidate = $getAlignment[7] + 1;
+								$nextSeqStartCandidate = $getAlignment[9];
 							}
 						}
 
@@ -1414,28 +1600,28 @@ END
 							#keep preSeq sequence
 							if($preAssemblySeq[7] > 0)
 							{
-								if ($getAlignment[10] < $getAlignment[11])
+								if ($getAlignment[8] < $getAlignment[9])
 								{
-									$preSeqEndCandidate = $getAlignment[9];
-									$nextSeqStartCandidate = $getAlignment[11] + 1;
+									$preSeqEndCandidate = $getAlignment[7];
+									$nextSeqStartCandidate = $getAlignment[9] + 1;
 								}
 								else
 								{
-									$preSeqEndCandidate = $getAlignment[9];
-									$nextSeqEndCandidate = $getAlignment[11] - 1;
+									$preSeqEndCandidate = $getAlignment[7];
+									$nextSeqEndCandidate = $getAlignment[9] - 1;
 								}
 							}
 							else
 							{
-								if ($getAlignment[10] < $getAlignment[11])
+								if ($getAlignment[8] < $getAlignment[9])
 								{
-									$preSeqStartCandidate = $getAlignment[8];
-									$nextSeqEndCandidate = $getAlignment[10] - 1;
+									$preSeqStartCandidate = $getAlignment[6];
+									$nextSeqEndCandidate = $getAlignment[8] - 1;
 								}
 								else
 								{
-									$preSeqStartCandidate = $getAlignment[8];
-									$nextSeqStartCandidate = $getAlignment[10] + 1;
+									$preSeqStartCandidate = $getAlignment[6];
+									$nextSeqStartCandidate = $getAlignment[8] + 1;
 								}
 							}
 
@@ -1492,28 +1678,65 @@ END
 					$lastAssemblySeq = $_;
 				}
 				my $lastComponentType = '';
-				for (@assemblySeqListAll)
+				for my $assemblySeqIndividual (@assemblySeqListAll)
 				{
-					my $getAlignment = $dbh->prepare("SELECT * FROM alignment WHERE hidden = 0 AND query = ? ORDER BY alignment.id");
-					$getAlignment->execute($sequenceIdOfAssemblySeq->{$_});
-					while (my @getAlignment = $getAlignment->fetchrow_array())
+					my $queryDir;
+					for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$assemblySeqIndividual}); $position += 2)
 					{
-						next unless (exists $sequenceInRefGenome->{$getAlignment[3]}); #check if subject is in refGenome
-						next unless ($getAlignment[5] >= $alignmentBlockSize || $getAlignment[5]*100/$sequenceLength->{$sequenceIdOfAssemblySeq->{$_}} >= $alignmentCoverage);
-						$chrNumber->{$sequenceInRefGenome->{$getAlignment[3]}} = 0 unless (exists $chrNumber->{$sequenceInRefGenome->{$getAlignment[3]}});
-						$chrNumber->{$sequenceInRefGenome->{$getAlignment[3]}} += $getAlignment[5];
-						my $estimatedPosition = ($getAlignment[10] < $getAlignment[11]) ? $getAlignment[10] - $getAlignment[8] - $assemblyCtgLength : $getAlignment[11] - $sequenceLength->{$sequenceIdOfAssemblySeq->{$_}} + $getAlignment[9] - $assemblyCtgLength;
-						if(exists $chrPosition->{$sequenceInRefGenome->{$getAlignment[3]}})
-						{
-							$chrPosition->{$sequenceInRefGenome->{$getAlignment[3]}} .= ",$estimatedPosition";
-						}
-						else
-						{
-							$chrPosition->{$sequenceInRefGenome->{$getAlignment[3]}} = $estimatedPosition;
-						}
+						$queryDir .= "/q". substr($sequenceIdOfAssemblySeq->{$assemblySeqIndividual},$position,2);
 					}
+
+					my @dirs;
+					push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
+					my @dirFile;
+
+					do{
+						my $dir = shift @dirs;
+						opendir(DIR, $dir) or die "can't opendir $dir: $!";
+						my @files = readdir(DIR);
+						closedir DIR;
+						foreach my $file (sort @files)
+						{
+							next if ($file =~ /^\./);
+							if(-f "$dir/$file")
+							{
+								push @dirFile, "$dir/$file";
+							}
+							elsif(-d "$dir/$file")
+							{
+								push @dirFile, "$dir/$file";
+								unshift @dirs, "$dir/$file";
+							}
+						}
+					}while (@dirs);
+
+					foreach my $file (sort @dirFile)
+					{
+						open (TBL, $file) or die "can't open file: $file";
+						while(<TBL>)
+						{
+							/^#/ and next;
+							my @getAlignment = split("\t",$_);
+							next if ($getAlignment[12] > 0);
+							next unless (exists $sequenceInRefGenome->{$getAlignment[1]}); #check if subject is in refGenome
+							next unless ($getAlignment[3] >= $alignmentBlockSize || $getAlignment[3]*100/$sequenceLength->{$sequenceIdOfAssemblySeq->{$assemblySeqIndividual}} >= $alignmentCoverage);
+							$chrNumber->{$sequenceInRefGenome->{$getAlignment[1]}} = 0 unless (exists $chrNumber->{$sequenceInRefGenome->{$getAlignment[1]}});
+							$chrNumber->{$sequenceInRefGenome->{$getAlignment[1]}} += $getAlignment[3];
+							my $estimatedPosition = ($getAlignment[8] < $getAlignment[9]) ? $getAlignment[8] - $getAlignment[6] - $assemblyCtgLength : $getAlignment[9] - $sequenceLength->{$sequenceIdOfAssemblySeq->{$assemblySeqIndividual}} + $getAlignment[7] - $assemblyCtgLength;
+							if(exists $chrPosition->{$sequenceInRefGenome->{$getAlignment[1]}})
+							{
+								$chrPosition->{$sequenceInRefGenome->{$getAlignment[1]}} .= ",$estimatedPosition";
+							}
+							else
+							{
+								$chrPosition->{$sequenceInRefGenome->{$getAlignment[1]}} = $estimatedPosition;
+							}
+						}
+						close(TBL);
+					}
+
 					my $assemblySeq=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-					$assemblySeq->execute($_);
+					$assemblySeq->execute($assemblySeqIndividual);
 					my @assemblySeq = $assemblySeq->fetchrow_array();
 					my $assemblySeqStart;
 					my $assemblySeqEnd;
@@ -1559,7 +1782,7 @@ END
 						}
 					}
 					#add non-end gaps to assemblyCtg length
-					if($_ ne $firstAssemblySeq && $lastComponentType ne 'U')
+					if($assemblySeqIndividual ne $firstAssemblySeq && $lastComponentType ne 'U')
 					{
 						if ($assemblySeq[4] eq 1 || $assemblySeq[4] eq 3 || $assemblySeq[4] eq 4 || $assemblySeq[4] eq 6 || $assemblySeq[4] eq 7 || $assemblySeq[4] eq 8) # add 5' 100 Ns
 						{
@@ -1569,7 +1792,7 @@ END
 					}
 					$assemblyCtgLength += $assemblySeqEnd - $assemblySeqStart + 1 - $filterLength;
 					$lastComponentType = 'D';
-					if($_ ne $lastAssemblySeq && $lastComponentType ne 'U')
+					if($assemblySeqIndividual ne $lastAssemblySeq && $lastComponentType ne 'U')
 					{
 						if ($assemblySeq[4] eq 2 || $assemblySeq[4] eq 3 || $assemblySeq[4] eq 5 || $assemblySeq[4] eq 6 || $assemblySeq[4] eq 7 || $assemblySeq[4] eq 8) # add 5' 100 Ns
 						{
@@ -1617,33 +1840,70 @@ END
 						my $assemblySeq=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 						$assemblySeq->execute($_);
 						my @assemblySeq = $assemblySeq->fetchrow_array();
-						my $alignmentToGenome = $dbh->prepare("SELECT * FROM alignment WHERE hidden = 0 AND query = ?");
-						$alignmentToGenome->execute($assemblySeq[5]);
-						while (my @alignmentToGenome = $alignmentToGenome->fetchrow_array())
+
+						my $queryDir;
+						for (my $position = 0; $position < length($assemblySeq[5]); $position += 2)
 						{
-							next unless (exists $sequenceInRefGenome->{$alignmentToGenome[3]});
-							if($assemblySeq[7] > 0)
+							$queryDir .= "/q". substr($assemblySeq[5],$position,2);
+						}
+
+						my @dirs;
+						push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
+						my @dirFile;
+
+						do{
+							my $dir = shift @dirs;
+							opendir(DIR, $dir) or die "can't opendir $dir: $!";
+							my @files = readdir(DIR);
+							closedir DIR;
+							foreach my $file (sort @files)
 							{
-								if ($alignmentToGenome[10] > $alignmentToGenome[11])
+								next if ($file =~ /^\./);
+								if(-f "$dir/$file")
 								{
-									$toBeFlipped += $alignmentToGenome[5];
+									push @dirFile, "$dir/$file";
+								}
+								elsif(-d "$dir/$file")
+								{
+									push @dirFile, "$dir/$file";
+									unshift @dirs, "$dir/$file";
+								}
+							}
+						}while (@dirs);
+
+						foreach my $file (sort @dirFile)
+						{
+							open (TBL, $file) or die "can't open file: $file";
+							while(<TBL>)
+							{
+								/^#/ and next;
+								my @getAlignment = split("\t",$_);
+								next if ($getAlignment[12] > 0);
+								next unless (exists $sequenceInRefGenome->{$getAlignment[1]});
+								if($assemblySeq[7] > 0)
+								{
+									if ($getAlignment[8] > $getAlignment[9])
+									{
+										$toBeFlipped += $getAlignment[3];
+									}
+									else
+									{
+										$toBeFlipped -= $getAlignment[3];
+									}
 								}
 								else
 								{
-									$toBeFlipped -= $alignmentToGenome[5];
+									if ($getAlignment[8] < $getAlignment[9])
+									{
+										$toBeFlipped += $getAlignment[3];
+									}
+									else
+									{
+										$toBeFlipped -= $getAlignment[3];
+									}
 								}
 							}
-							else
-							{
-								if ($alignmentToGenome[10] < $alignmentToGenome[11])
-								{
-									$toBeFlipped += $alignmentToGenome[5];
-								}
-								else
-								{
-									$toBeFlipped -= $alignmentToGenome[5];
-								}
-							}
+							close(TBL);
 						}
 					}
 					if ($toBeFlipped > 0)
@@ -1712,10 +1972,10 @@ END
 				}
 
 				my $lastComponentType = '';
-				for (@assemblySeqListAll)
+				for my $assemblySeqIndividual (@assemblySeqListAll)
 				{
 					my $assemblySeq=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-					$assemblySeq->execute($_);
+					$assemblySeq->execute($assemblySeqIndividual);
 					my @assemblySeq = $assemblySeq->fetchrow_array();
 					my $assemblySeqStart;
 					my $assemblySeqEnd;
@@ -1761,7 +2021,7 @@ END
 						}
 					}
 					#add non-end gaps to assemblyCtg length
-					if($_ ne $firstAssemblySeq && $lastComponentType ne 'U')
+					if($assemblySeqIndividual ne $firstAssemblySeq && $lastComponentType ne 'U')
 					{
 						if ($assemblySeq[4] eq 1 || $assemblySeq[4] eq 3 || $assemblySeq[4] eq 4 || $assemblySeq[4] eq 6 || $assemblySeq[4] eq 7 || $assemblySeq[4] eq 8) # add 5' 100 Ns
 						{
@@ -1771,7 +2031,7 @@ END
 					}
 					$assemblyCtgLength += $assemblySeqEnd - $assemblySeqStart + 1 - $filterLength;
 					$lastComponentType = 'D';
-					if($_ ne $lastAssemblySeq && $lastComponentType ne 'U')
+					if($assemblySeqIndividual ne $lastAssemblySeq && $lastComponentType ne 'U')
 					{
 						if ($assemblySeq[4] eq 2 || $assemblySeq[4] eq 3 || $assemblySeq[4] eq 5 || $assemblySeq[4] eq 6 || $assemblySeq[4] eq 7 || $assemblySeq[4] eq 8) # add 5' 100 Ns
 						{

@@ -60,12 +60,31 @@ END
 
 		if($alignmentId)
 		{
-			my $getAlignment = $dbh->prepare("SELECT * FROM alignment WHERE id = ?");
-			$getAlignment->execute($alignmentId);
-			my @getAlignment = $getAlignment->fetchrow_array();
+			my @alignmentId = split "-", $alignmentId;
+			my $queryDir;
+			for (my $position = 0; $position < length($alignmentId[0]); $position += 2)
+			{
+				$queryDir .= "/q". substr($alignmentId[0],$position,2);
+			}
+			my $subjectDir;
+			for (my $position = 0; $position < length($alignmentId[1]); $position += 2)
+			{
+				$subjectDir .= "/s". substr($alignmentId[1],$position,2);
+			}
+			my @getAlignment;
+			my $alignmentCount = 0;
+			open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].tbl";
+			while(<TBL>)
+			{
+				/^#/ and next;
+				$alignmentCount++;
+				@getAlignment = split("\t",$_);
+				last if ($alignmentCount == $alignmentId[2]);
+			}
+			close(TBL);
 			
 			my $assemblyPreSeq=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-			$assemblyPreSeq->execute($seqInCtg{$getAlignment[2]});
+			$assemblyPreSeq->execute($seqInCtg{$getAlignment[0]});
 			my @assemblyPreSeq = $assemblyPreSeq->fetchrow_array();
 			my $preSeqStart;
 			my $preSeqEnd;
@@ -79,11 +98,11 @@ END
 				$preSeqEnd = $assemblyPreSeq[6];
 			}
 			my $preSequence = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-			$preSequence->execute($getAlignment[2]);
+			$preSequence->execute($getAlignment[0]);
 			my @preSequence = $preSequence->fetchrow_array();
 
 			my $assemblyNextSeq=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-			$assemblyNextSeq->execute($seqInCtg{$getAlignment[3]});
+			$assemblyNextSeq->execute($seqInCtg{$getAlignment[1]});
 			my @assemblyNextSeq = $assemblyNextSeq->fetchrow_array();
 			my $nextSeqStart;
 			my $nextSeqEnd;
@@ -97,7 +116,7 @@ END
 				$nextSeqEnd = $assemblyNextSeq[6];
 			}
 			my $nextSequence = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-			$nextSequence->execute($getAlignment[3]);
+			$nextSequence->execute($getAlignment[1]);
 			my @nextSequence = $nextSequence->fetchrow_array();
 
 			my $preSeqStartCandidate = $preSeqStart;
@@ -110,28 +129,28 @@ END
 				#keep preSeq sequence
 				if($assemblyPreSeq[7] > 0)
 				{
-					if ($getAlignment[10] < $getAlignment[11])
+					if ($getAlignment[8] < $getAlignment[9])
 					{
-						$preSeqEndCandidate = $getAlignment[9];
-						$nextSeqStartCandidate = $getAlignment[11] + 1;
+						$preSeqEndCandidate = $getAlignment[7];
+						$nextSeqStartCandidate = $getAlignment[9] + 1;
 					}
 					else
 					{
-						$preSeqEndCandidate = $getAlignment[9];
-						$nextSeqEndCandidate = $getAlignment[11] - 1;
+						$preSeqEndCandidate = $getAlignment[7];
+						$nextSeqEndCandidate = $getAlignment[9] - 1;
 					}
 				}
 				else
 				{
-					if ($getAlignment[10] < $getAlignment[11])
+					if ($getAlignment[8] < $getAlignment[9])
 					{
-						$preSeqStartCandidate = $getAlignment[8];
-						$nextSeqEndCandidate = $getAlignment[10] - 1;
+						$preSeqStartCandidate = $getAlignment[6];
+						$nextSeqEndCandidate = $getAlignment[8] - 1;
 					}
 					else
 					{
-						$preSeqStartCandidate = $getAlignment[8];
-						$nextSeqStartCandidate = $getAlignment[10] + 1;
+						$preSeqStartCandidate = $getAlignment[6];
+						$nextSeqStartCandidate = $getAlignment[8] + 1;
 					}
 				}
 
@@ -149,28 +168,28 @@ END
 					$nextSeqEndCandidate = $nextSeqEnd;
 					if($assemblyPreSeq[7] > 0)
 					{
-						if ($getAlignment[10] < $getAlignment[11])
+						if ($getAlignment[8] < $getAlignment[9])
 						{
-							$preSeqEndCandidate = $getAlignment[8] - 1;
-							$nextSeqStartCandidate = $getAlignment[10];
+							$preSeqEndCandidate = $getAlignment[6] - 1;
+							$nextSeqStartCandidate = $getAlignment[8];
 						}
 						else
 						{
-							$preSeqEndCandidate = $getAlignment[8] - 1;
-							$nextSeqEndCandidate = $getAlignment[10];
+							$preSeqEndCandidate = $getAlignment[6] - 1;
+							$nextSeqEndCandidate = $getAlignment[8];
 						}
 					}
 					else
 					{
-						if ($getAlignment[10] < $getAlignment[11])
+						if ($getAlignment[8] < $getAlignment[9])
 						{
-							$preSeqStartCandidate = $getAlignment[9] + 1;
-							$nextSeqEndCandidate = $getAlignment[11];
+							$preSeqStartCandidate = $getAlignment[7] + 1;
+							$nextSeqEndCandidate = $getAlignment[9];
 						}
 						else
 						{
-							$preSeqStartCandidate = $getAlignment[9] + 1;
-							$nextSeqStartCandidate = $getAlignment[11];
+							$preSeqStartCandidate = $getAlignment[7] + 1;
+							$nextSeqStartCandidate = $getAlignment[9];
 						}
 					}
 
@@ -195,28 +214,28 @@ END
 				#keep nextSeq sequence
 				if($assemblyPreSeq[7] > 0)
 				{
-					if ($getAlignment[10] < $getAlignment[11])
+					if ($getAlignment[8] < $getAlignment[9])
 					{
-						$preSeqEndCandidate = $getAlignment[8] - 1;
-						$nextSeqStartCandidate = $getAlignment[10];
+						$preSeqEndCandidate = $getAlignment[6] - 1;
+						$nextSeqStartCandidate = $getAlignment[8];
 					}
 					else
 					{
-						$preSeqEndCandidate = $getAlignment[8] - 1;
-						$nextSeqEndCandidate = $getAlignment[10];
+						$preSeqEndCandidate = $getAlignment[6] - 1;
+						$nextSeqEndCandidate = $getAlignment[8];
 					}
 				}
 				else
 				{
-					if ($getAlignment[10] < $getAlignment[11])
+					if ($getAlignment[8] < $getAlignment[9])
 					{
-						$preSeqStartCandidate = $getAlignment[9] + 1;
-						$nextSeqEndCandidate = $getAlignment[11];
+						$preSeqStartCandidate = $getAlignment[7] + 1;
+						$nextSeqEndCandidate = $getAlignment[9];
 					}
 					else
 					{
-						$preSeqStartCandidate = $getAlignment[9] + 1;
-						$nextSeqStartCandidate = $getAlignment[11];
+						$preSeqStartCandidate = $getAlignment[7] + 1;
+						$nextSeqStartCandidate = $getAlignment[9];
 					}
 				}
 
@@ -234,28 +253,28 @@ END
 					#keep preSeq sequence
 					if($assemblyPreSeq[7] > 0)
 					{
-						if ($getAlignment[10] < $getAlignment[11])
+						if ($getAlignment[8] < $getAlignment[9])
 						{
-							$preSeqEndCandidate = $getAlignment[9];
-							$nextSeqStartCandidate = $getAlignment[11] + 1;
+							$preSeqEndCandidate = $getAlignment[7];
+							$nextSeqStartCandidate = $getAlignment[9] + 1;
 						}
 						else
 						{
-							$preSeqEndCandidate = $getAlignment[9];
-							$nextSeqEndCandidate = $getAlignment[11] - 1;
+							$preSeqEndCandidate = $getAlignment[7];
+							$nextSeqEndCandidate = $getAlignment[9] - 1;
 						}
 					}
 					else
 					{
-						if ($getAlignment[10] < $getAlignment[11])
+						if ($getAlignment[8] < $getAlignment[9])
 						{
-							$preSeqStartCandidate = $getAlignment[8];
-							$nextSeqEndCandidate = $getAlignment[10] - 1;
+							$preSeqStartCandidate = $getAlignment[6];
+							$nextSeqEndCandidate = $getAlignment[8] - 1;
 						}
 						else
 						{
-							$preSeqStartCandidate = $getAlignment[8];
-							$nextSeqStartCandidate = $getAlignment[10] + 1;
+							$preSeqStartCandidate = $getAlignment[6];
+							$nextSeqStartCandidate = $getAlignment[8] + 1;
 						}
 					}
 
@@ -320,9 +339,27 @@ END
 				$nextSequence->execute($assemblyNextSeq[5]);
 				my @nextSequence = $nextSequence->fetchrow_array();
 
-				my $getAlignment = $dbh->prepare("SELECT * FROM alignment WHERE query = ? AND subject = ? ORDER BY id LIMIT 1");
-				$getAlignment->execute($assemblyPreSeq[5],$assemblyNextSeq[5]);
-				my @getAlignment = $getAlignment->fetchrow_array();
+				my $queryDir;
+				for (my $position = 0; $position < length($assemblyPreSeq[5]); $position += 2)
+				{
+					$queryDir .= "/q". substr($assemblyPreSeq[5],$position,2);
+				}
+				my $subjectDir;
+				for (my $position = 0; $position < length($assemblyNextSeq[5]); $position += 2)
+				{
+					$subjectDir .= "/s". substr($assemblyNextSeq[5],$position,2);
+				}
+				my @getAlignment;
+				my $alignmentCount = 0;
+				open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblyPreSeq[5]-$assemblyNextSeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblyPreSeq[5]-$assemblyNextSeq[5].tbl";
+				while(<TBL>)
+				{
+					/^#/ and next;
+					$alignmentCount++;
+					@getAlignment = split("\t",$_);
+					last if ($alignmentCount == 1);
+				}
+				close(TBL);
 
 				my $preSeqStartCandidate = $preSeqStart;
 				my $preSeqEndCandidate = $preSeqEnd;
@@ -334,28 +371,28 @@ END
 					#keep preSeq sequence
 					if($assemblyPreSeq[7] > 0)
 					{
-						if ($getAlignment[10] < $getAlignment[11])
+						if ($getAlignment[8] < $getAlignment[9])
 						{
-							$preSeqEndCandidate = $getAlignment[9];
-							$nextSeqStartCandidate = $getAlignment[11] + 1;
+							$preSeqEndCandidate = $getAlignment[7];
+							$nextSeqStartCandidate = $getAlignment[9] + 1;
 						}
 						else
 						{
-							$preSeqEndCandidate = $getAlignment[9];
-							$nextSeqEndCandidate = $getAlignment[11] - 1;
+							$preSeqEndCandidate = $getAlignment[7];
+							$nextSeqEndCandidate = $getAlignment[9] - 1;
 						}
 					}
 					else
 					{
-						if ($getAlignment[10] < $getAlignment[11])
+						if ($getAlignment[8] < $getAlignment[9])
 						{
-							$preSeqStartCandidate = $getAlignment[8];
-							$nextSeqEndCandidate = $getAlignment[10] - 1;
+							$preSeqStartCandidate = $getAlignment[6];
+							$nextSeqEndCandidate = $getAlignment[8] - 1;
 						}
 						else
 						{
-							$preSeqStartCandidate = $getAlignment[8];
-							$nextSeqStartCandidate = $getAlignment[10] + 1;
+							$preSeqStartCandidate = $getAlignment[6];
+							$nextSeqStartCandidate = $getAlignment[8] + 1;
 						}
 					}
 
@@ -373,28 +410,28 @@ END
 						$nextSeqEndCandidate = $nextSeqEnd;
 						if($assemblyPreSeq[7] > 0)
 						{
-							if ($getAlignment[10] < $getAlignment[11])
+							if ($getAlignment[8] < $getAlignment[9])
 							{
-								$preSeqEndCandidate = $getAlignment[8] - 1;
-								$nextSeqStartCandidate = $getAlignment[10];
+								$preSeqEndCandidate = $getAlignment[6] - 1;
+								$nextSeqStartCandidate = $getAlignment[8];
 							}
 							else
 							{
-								$preSeqEndCandidate = $getAlignment[8] - 1;
-								$nextSeqEndCandidate = $getAlignment[10];
+								$preSeqEndCandidate = $getAlignment[6] - 1;
+								$nextSeqEndCandidate = $getAlignment[8];
 							}
 						}
 						else
 						{
-							if ($getAlignment[10] < $getAlignment[11])
+							if ($getAlignment[8] < $getAlignment[9])
 							{
-								$preSeqStartCandidate = $getAlignment[9] + 1;
-								$nextSeqEndCandidate = $getAlignment[11];
+								$preSeqStartCandidate = $getAlignment[7] + 1;
+								$nextSeqEndCandidate = $getAlignment[9];
 							}
 							else
 							{
-								$preSeqStartCandidate = $getAlignment[9] + 1;
-								$nextSeqStartCandidate = $getAlignment[11];
+								$preSeqStartCandidate = $getAlignment[7] + 1;
+								$nextSeqStartCandidate = $getAlignment[9];
 							}
 						}
 
@@ -419,28 +456,28 @@ END
 					#keep nextSeq sequence
 					if($assemblyPreSeq[7] > 0)
 					{
-						if ($getAlignment[10] < $getAlignment[11])
+						if ($getAlignment[8] < $getAlignment[9])
 						{
-							$preSeqEndCandidate = $getAlignment[8] - 1;
-							$nextSeqStartCandidate = $getAlignment[10];
+							$preSeqEndCandidate = $getAlignment[6] - 1;
+							$nextSeqStartCandidate = $getAlignment[8];
 						}
 						else
 						{
-							$preSeqEndCandidate = $getAlignment[8] - 1;
-							$nextSeqEndCandidate = $getAlignment[10];
+							$preSeqEndCandidate = $getAlignment[6] - 1;
+							$nextSeqEndCandidate = $getAlignment[8];
 						}
 					}
 					else
 					{
-						if ($getAlignment[10] < $getAlignment[11])
+						if ($getAlignment[8] < $getAlignment[9])
 						{
-							$preSeqStartCandidate = $getAlignment[9] + 1;
-							$nextSeqEndCandidate = $getAlignment[11];
+							$preSeqStartCandidate = $getAlignment[7] + 1;
+							$nextSeqEndCandidate = $getAlignment[9];
 						}
 						else
 						{
-							$preSeqStartCandidate = $getAlignment[9] + 1;
-							$nextSeqStartCandidate = $getAlignment[11];
+							$preSeqStartCandidate = $getAlignment[7] + 1;
+							$nextSeqStartCandidate = $getAlignment[9];
 						}
 					}
 
@@ -458,28 +495,28 @@ END
 						#keep preSeq sequence
 						if($assemblyPreSeq[7] > 0)
 						{
-							if ($getAlignment[10] < $getAlignment[11])
+							if ($getAlignment[8] < $getAlignment[9])
 							{
-								$preSeqEndCandidate = $getAlignment[9];
-								$nextSeqStartCandidate = $getAlignment[11] + 1;
+								$preSeqEndCandidate = $getAlignment[7];
+								$nextSeqStartCandidate = $getAlignment[9] + 1;
 							}
 							else
 							{
-								$preSeqEndCandidate = $getAlignment[9];
-								$nextSeqEndCandidate = $getAlignment[11] - 1;
+								$preSeqEndCandidate = $getAlignment[7];
+								$nextSeqEndCandidate = $getAlignment[9] - 1;
 							}
 						}
 						else
 						{
-							if ($getAlignment[10] < $getAlignment[11])
+							if ($getAlignment[8] < $getAlignment[9])
 							{
-								$preSeqStartCandidate = $getAlignment[8];
-								$nextSeqEndCandidate = $getAlignment[10] - 1;
+								$preSeqStartCandidate = $getAlignment[6];
+								$nextSeqEndCandidate = $getAlignment[8] - 1;
 							}
 							else
 							{
-								$preSeqStartCandidate = $getAlignment[8];
-								$nextSeqStartCandidate = $getAlignment[10] + 1;
+								$preSeqStartCandidate = $getAlignment[6];
+								$nextSeqStartCandidate = $getAlignment[8] + 1;
 							}
 						}
 

@@ -31,7 +31,40 @@ print header;
 
 if($alignmentId)
 {
-	my $updateAlignment=$dbh->do("UPDATE alignment SET hidden = 1 WHERE id = $alignmentId");
+	my @alignmentId = split "-", $alignmentId;
+	my $queryDir;
+	for (my $position = 0; $position < length($alignmentId[0]); $position += 2)
+	{
+		$queryDir .= "/q". substr($alignmentId[0],$position,2);
+	}
+	my $subjectDir;
+	for (my $position = 0; $position < length($alignmentId[1]); $position += 2)
+	{
+		$subjectDir .= "/s". substr($alignmentId[1],$position,2);
+	}
+	my @getAlignment;
+	my $alignmentCount = 0;
+	open (NEW,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].new") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].new";
+	open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].tbl";
+	while(<TBL>)
+	{
+		if (/^#/)
+		{
+			print NEW $_;
+			next;
+		}
+		$alignmentCount++;
+		@getAlignment = split("\t",$_);
+		$getAlignment[12] =~ s/\W//g;
+		$getAlignment[12] = 1 if ($alignmentCount == $alignmentId[2]);
+		print NEW join "\t", @getAlignment;
+		print NEW "\n";
+	}
+	close(TBL);
+	close(NEW);
+	unlink("$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].tbl");
+	rename("$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].new", "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].tbl");
+
 	if($openAssemblyId)
 	{
 			print <<END;
