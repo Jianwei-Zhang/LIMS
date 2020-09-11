@@ -442,7 +442,10 @@ END
 				}
 				else
 				{
+					my $sequenceDetails = decode_json $item[8];
+					unlink ("$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}");
 					my $deleteSequence=$dbh->do("DELETE FROM matrix WHERE id = $itemId");
+
 					my $queryDir;
 					for (my $position = 0; $position < length($itemId); $position += 2)
 					{
@@ -515,7 +518,6 @@ END
 			}
 			elsif($item[1] eq 'genome')
 			{
-		
 				my $genomeAsReference = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'assembly' AND y = $itemId");
 				$genomeAsReference->execute();
 				if($genomeAsReference->rows > 0)
@@ -572,6 +574,8 @@ END
 				$genomeSequence->execute();
 				while(my @genomeSequence = $genomeSequence->fetchrow_array())
 				{
+					my $sequenceDetails = decode_json $genomeSequence[8];
+					unlink ("$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}");
 					my $queryDir;
 					for (my $position = 0; $position < length($genomeSequence[0]); $position += 2)
 					{
