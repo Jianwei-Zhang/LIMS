@@ -238,9 +238,9 @@ END
 		}
 		while(<CMD>)
 		{
+			chop;
 			/^#/ and next;
 			my @hit = split("\t",$_);
-			$hit[11] =~ s/\W//g;
 			$hit[12] = 0; #add a hidden column
 			next if($hit[0] eq $hit[1]);
 			next if($hit[3] < $minOverlapAlignment);
@@ -427,9 +427,9 @@ END
 					open (CMDA,"$alignEngineList->{$alignEngine} -query $commoncfg->{TMPDIR}/$hit[0].$$.seq -subject $commoncfg->{TMPDIR}/$hit[1].$$.seq -dust no -evalue 1e-200 -perc_identity $identityAlignment -outfmt 6 |") or die "can't open CMD: $!";
 					while(<CMDA>)
 					{
+						chop;
 						/^#/ and next;
 						my @detailedHit = split("\t",$_);
-						$detailedHit[11] =~ s/\W//g;
 						$detailedHit[12] = 0; #add a hidden column
 						if($detailedHit[3] >= $minOverlapAlignment)
 						{

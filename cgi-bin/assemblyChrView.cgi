@@ -593,6 +593,7 @@ if ($assemblyId && $chr)
 				open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl";
 				while(<TBL>)
 				{
+					chop;
 					/^#/ and next;
 					$alignmentCount++;
 					my @alignments = split("\t",$_);
@@ -1019,6 +1020,7 @@ if ($assemblyId && $chr)
 			open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl";
 			while(<TBL>)
 			{
+				chop;
 				/^#/ and next;
 				$alignmentCount++;
 				my @alignments = split("\t",$_);

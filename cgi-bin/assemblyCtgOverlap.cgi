@@ -76,6 +76,7 @@ END
 			open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].tbl";
 			while(<TBL>)
 			{
+				chop;
 				/^#/ and next;
 				$alignmentCount++;
 				@getAlignment = split("\t",$_);
@@ -354,6 +355,7 @@ END
 				open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblyPreSeq[5]-$assemblyNextSeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblyPreSeq[5]-$assemblyNextSeq[5].tbl";
 				while(<TBL>)
 				{
+					chop;
 					/^#/ and next;
 					$alignmentCount++;
 					@getAlignment = split("\t",$_);

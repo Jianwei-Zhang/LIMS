@@ -525,6 +525,7 @@ END
 							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}.tbl";
 							while(<TBL>)
 							{
+								chop;
 								/^#/ and next;
 								my @getAlignment = split("\t",$_);
 								$startFound = 1 if ($getAlignment[6] == 1);
@@ -556,6 +557,7 @@ END
 							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl";
 							while(<TBL>)
 							{
+								chop;
 								/^#/ and next;
 								my @getAlignment = split("\t",$_);
 								$startFound = 1 if ($getAlignment[6] == 1);
@@ -605,6 +607,7 @@ END
 							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl";
 							while(<TBL>)
 							{
+								chop;
 								/^#/ and next;
 								my @getAlignment = split("\t",$_);
 								if($getAlignment[8] < $getAlignment[9])
@@ -636,6 +639,7 @@ END
 								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirPre$subjectDirPre/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirPre$subjectDirPre/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl";
 								while(<TBL>)
 								{
+									chop;
 									/^#/ and next;
 									my @getAlignmentPre = split("\t",$_);
 									$startFound = 1 if ($getAlignmentPre[6] == 1);
@@ -657,6 +661,7 @@ END
 								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirNext$subjectDirNext/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirNext$subjectDirNext/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl";
 								while(<TBL>)
 								{
+									chop;
 									/^#/ and next;
 									my @getAlignmentNext = split("\t",$_);
 									$startFound = 1 if ($getAlignmentNext[6] == 1);
@@ -725,6 +730,7 @@ END
 					open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo$subjectDirTwo/$preAssemblySeq[5]-$currentAssemblySeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo$subjectDirTwo/$preAssemblySeq[5]-$currentAssemblySeq[5].tbl";
 					while(<TBL>)
 					{
+						chop;
 						/^#/ and next;
 						my @getAlignmentTwo = split("\t",$_);
 
@@ -821,6 +827,7 @@ END
 							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preCtgSeq[5]-$currentCtgSeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preCtgSeq[5]-$currentCtgSeq[5].tbl";
 							while(<TBL>)
 							{
+								chop;
 								/^#/ and next;
 								my @getAlignment = split("\t",$_);
 								$goodEndFoundA = 1 if ($getAlignment[6] == 1 || $getAlignment[7] == $preCtgSeq[6]);
@@ -911,6 +918,7 @@ END
 							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$eachSingletonCtgSeqA[5]-$eachSingletonCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preCtgSeq[5]-$eachSingletonCtgSeqB[5].tbl";
 							while(<TBL>)
 							{
+								chop;
 								/^#/ and next;
 								my @getAlignment = split("\t",$_);
 								$goodEndFoundA = 1 if ($getAlignment[6] == 1 || $getAlignment[7] == $eachSingletonCtgSeqA[6]);
@@ -998,6 +1006,7 @@ END
 							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirHead$subjectDirHead/$eachSingletonCtgSeq[5]-$headCtgSeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirHead$subjectDirHead/$eachSingletonCtgSeq[5]-$headCtgSeq[5].tbl";
 							while(<TBL>)
 							{
+								chop;
 								/^#/ and next;
 								my @getAlignmentHead = split("\t",$_);
 								$goodEndFoundA = 1 if ($getAlignmentHead[6] == 1 || $getAlignmentHead[7] == $eachSingletonCtgSeq[6]);
@@ -1050,6 +1059,7 @@ END
 							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTail$subjectDirTail/$eachSingletonCtgSeq[5]-$tailCtgSeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTail$subjectDirTail/$eachSingletonCtgSeq[5]-$tailCtgSeq[5].tbl";
 							while(<TBL>)
 							{
+								chop;
 								/^#/ and next;
 								my @getAlignmentTail = split("\t",$_);
 								$goodEndFoundA = 1 if ($getAlignmentTail[6] == 1 || $getAlignmentTail[7] == $eachSingletonCtgSeq[6]);
@@ -1155,6 +1165,7 @@ END
 								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirAHBH$subjectDirAHBH/$headCtgSeqA[5]-$headCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirAHBH$subjectDirAHBH/$headCtgSeqA[5]-$headCtgSeqB[5].tbl";
 								while(<TBL>)
 								{
+									chop;
 									/^#/ and next;
 									my @getAlignmentAHBH = split("\t",$_);
 									$goodEndFoundA = 1 if ($getAlignmentAHBH[6] == 1 || $getAlignmentAHBH[7] == $headCtgSeqA[6]);
@@ -1219,6 +1230,7 @@ END
 								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirAHBT$subjectDirAHBT/$headCtgSeqA[5]-$tailCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirAHBT$subjectDirAHBT/$headCtgSeqA[5]-$tailCtgSeqB[5].tbl";
 								while(<TBL>)
 								{
+									chop;
 									/^#/ and next;
 									my @getAlignmentAHBT = split("\t",$_);
 									$goodEndFoundA = 1 if ($getAlignmentAHBT[6] == 1 || $getAlignmentAHBT[7] == $headCtgSeqA[6]);
@@ -1275,6 +1287,7 @@ END
 								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirATBH$subjectDirATBH/$tailCtgSeqA[5]-$headCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirATBH$subjectDirATBH/$tailCtgSeqA[5]-$headCtgSeqB[5].tbl";
 								while(<TBL>)
 								{
+									chop;
 									/^#/ and next;
 									my @getAlignmentATBH = split("\t",$_);
 									$goodEndFoundA = 1 if ($getAlignmentATBH[6] == 1 || $getAlignmentATBH[7] == $tailCtgSeqA[6]);
@@ -1331,6 +1344,7 @@ END
 								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirATBT$subjectDirATBT/$tailCtgSeqA[5]-$tailCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirATBT$subjectDirATBT/$tailCtgSeqA[5]-$tailCtgSeqB[5].tbl";
 								while(<TBL>)
 								{
+									chop;
 									/^#/ and next;
 									my @getAlignmentATBT = split("\t",$_);
 									$goodEndFoundA = 1 if ($getAlignmentATBT[6] == 1 || $getAlignmentATBT[7] == $tailCtgSeqA[6]);
@@ -1464,6 +1478,7 @@ END
 					open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preAssemblySeq[5]-$nextAssemblySeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preAssemblySeq[5]-$nextAssemblySeq[5].tbl";
 					while(<TBL>)
 					{
+						chop;
 						/^#/ and next;
 						$alignmentCount++;
 						@getAlignment = split("\t",$_);
@@ -1704,6 +1719,7 @@ END
 									open (TBL, "$dir/$file") or die "can't open file: $dir/$file";
 									while(<TBL>)
 									{
+										chop;
 										/^#/ and next;
 										my @getAlignment = split("\t",$_);
 										next if ($getAlignment[12] > 0);
@@ -1862,6 +1878,7 @@ END
 										open (TBL, "$dir/$file") or die "can't open file: $dir/$file";
 										while(<TBL>)
 										{
+											chop;
 											/^#/ and next;
 											my @getAlignment = split("\t",$_);
 											next if ($getAlignment[12] > 0);

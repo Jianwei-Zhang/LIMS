@@ -461,6 +461,7 @@ if ($assemblyCtgId)
 			open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$preSeq}-$assemblySequenceId->{$currentSeq}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$preSeq}-$assemblySequenceId->{$currentSeq}.tbl";
 			while(<TBL>)
 			{
+				chop;
 				/^#/ and next;
 				$alignmentCount++;
 				my @alignments = split("\t",$_);

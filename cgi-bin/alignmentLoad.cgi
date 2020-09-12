@@ -143,9 +143,9 @@ END
 		open(ALN, "$alignmentInfile") or die "cannot open file $alignmentInfile";
 		while(<ALN>)
 		{
+			chop;
 			/^#/ and next;
 			my @hit = split("\t",$_);
-			$hit[11] =~ s/\W//g;
 			$hit[12] = 0; #add a hidden column
 			next if($hit[0] eq $hit[1]);
 			if (exists $queryId->{$hit[0]} && exists $subjectId->{$hit[1]})

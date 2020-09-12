@@ -175,7 +175,6 @@ foreach my $querySetId (keys %$setToSet)
 	}
 	foreach my $subjectSetId (keys %{$setToSet->{$querySetId}})
 	{
-
 		my $subjectDir;
 		for (my $position = 0; $position < length($subjectSetId); $position += 2)
 		{

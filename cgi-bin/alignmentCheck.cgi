@@ -103,6 +103,7 @@ END
 			open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$getSequenceA[0]-$getSequenceB[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$getSequenceA[0]-$getSequenceB[0].tbl";
 			while(<TBL>)
 			{
+				chop;
 				/^#/ and next;
 				my @hit = split("\t",$_);
 				next if ($hit[12] > 0);
@@ -199,6 +200,7 @@ END
 								open (TBL, "$dir/$file") or die "can't open file: $dir/$file";
 								while(<TBL>)
 								{
+									chop;
 									/^#/ and next;
 									my @hit = split("\t",$_);
 									next if ($hit[12] > 0);

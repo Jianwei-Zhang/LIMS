@@ -53,9 +53,9 @@ if($alignmentId)
 			print NEW $_;
 			next;
 		}
+		chop;
 		$alignmentCount++;
 		@getAlignment = split("\t",$_);
-		$getAlignment[12] =~ s/\W//g;
 		$getAlignment[12] = 1 if ($alignmentCount == $alignmentId[2]);
 		print NEW join "\t", @getAlignment;
 		print NEW "\n";

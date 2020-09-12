@@ -18,9 +18,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %seqDir = (
 	0=>'NA',
 	1=>'f',
@@ -53,11 +50,12 @@ if ($seqId)
 	my @refSequence = $refSequence->fetchrow_array();
 	my $refSequenceDetails = decode_json $refSequence[8];
 	$refSequenceDetails->{'id'} = '' unless (exists $refSequenceDetails->{'id'});
-	$refSequenceDetails->{'description'} = '' unless (exists $refSequenceDetails->{'description'});
 	$refSequenceDetails->{'gapList'} = '' unless (exists $refSequenceDetails->{'gapList'});
 	$refSequenceDetails->{'filter'} = '' unless (exists $refSequenceDetails->{'filter'});
+	my $genome=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+	$genome->execute($refSequence[4]);
+	my @genome = $genome->fetchrow_array();
 	my $totalSeqs = 0;
-
 
 	# create an SVG object
 	$svg= SVG->new(width=>'$svgWidth',height=>'$svgHeight');
@@ -158,81 +156,108 @@ if ($seqId)
 	my $totalLength = 0;
 	my $besId = 0;
 	open (BES,">$commoncfg->{TMPDIR}/BES-$refSequence[2].txt") or die "can't open file: $commoncfg->{TMPDIR}/BES-$refSequence[2].txt";
-	my $besList=$dbh->prepare("SELECT * FROM alignment WHERE subject = ? AND program LIKE 'BES%' AND perc_indentity >= 95 ORDER BY s_start");
-	$besList->execute($seqId);
-	while (my @besList = $besList->fetchrow_array())
+
+	my $queryDirLibrary;
+	for (my $position = 0; $position < length($genome[6]); $position += 2)
 	{
-		$besId++;
-		my $besBarX = ($besList[11] > $besList[10]) ? $margin + $besList[10] / $pixelUnit : $margin + $besList[11] / $pixelUnit;
-		my $besBarY = $barY + $barHeight*1.5;
-		$besSeq->rectangle(
-			id    => $besList[2].$besId,
-			x     => $besBarX,
-			y     => $besBarY,
-			width => ($besList[11] > $besList[10]) ? ($besList[11] - $besList[10]) / $pixelUnit : ($besList[10] - $besList[11]) / $pixelUnit,
-			height=> $barHeight,
-			style => { stroke => ($besList[11] > $besList[10]) ? 'black' : 'red',
-						fill => 'blue',
-						'fill-opacity' => 0.3
+		$queryDirLibrary .= "/q". substr($genome[6],$position,2);
+	}
+	my $subjectDirGenome;
+	for (my $position = 0; $position < length($genome[0]); $position += 2)
+	{
+		$subjectDirGenome .= "/s". substr($genome[0],$position,2);
+	}
+	if (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLibrary$subjectDirGenome/$genome[6]-$genome[0].list")
+	{
+		open (LIST,"$commoncfg->{DATADIR}/alignments/setToSet$queryDirLibrary$subjectDirGenome/$genome[6]-$genome[0].list") or die "can't open file: $commoncfg->{DATADIR}/alignments/setToSet$queryDirLibrary$subjectDirGenome/$genome[6]-$genome[0].list";
+		while (<LIST>)
+		{
+			chop;
+			if(/(\d+)-(\d+).tbl$/)
+			{
+				next if ($2 != $refSequence[0]);
+				open (TBL, "$commoncfg->{DATADIR}/$_") or die "can't open file: $commoncfg->{DATADIR}/$_";
+				while(<TBL>)
+				{
+					chop;
+					/^#/ and next;
+					my @besList = split("\t",$_);
+					next if ($besList[12] > 0);
+					next if ($besList[2] < 95);
+
+					$besId++;
+					my $besSequence = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+					$besSequence->execute($besList[0]);
+					my @besSequence = $besSequence->fetchrow_array();
+					my $besBarX = ($besList[9] > $besList[8]) ? $margin + $besList[8] / $pixelUnit : $margin + $besList[9] / $pixelUnit;
+					my $besBarY = $barY + $barHeight*1.5;
+					$besSeq->rectangle(
+						id    => $besList[0].$besId,
+						x     => $besBarX,
+						y     => $besBarY,
+						width => ($besList[9] > $besList[8]) ? ($besList[9] - $besList[8]) / $pixelUnit : ($besList[8] - $besList[9]) / $pixelUnit,
+						height=> $barHeight,
+						style => { stroke => ($besList[9] > $besList[8]) ? 'black' : 'red',
+									fill => 'blue',
+									'fill-opacity' => 0.3
+								}
+					);
+
+					$fpcContig->{$besSequence[2]} = "None" unless (exists $fpcContig->{$besSequence[2]});
+					$fpcCloneLeftEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneLeftEnd->{$besSequence[2]});
+					$fpcCloneRightEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneRightEnd->{$besSequence[2]});
+
+					my $getFpcClone = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'fpcClone' AND name LIKE ?");
+					$getFpcClone->execute($besSequence[2]);
+					while (my @getFpcClone = $getFpcClone->fetchrow_array())
+					{
+						$fpcContig->{$besSequence[2]} = 'Ctg0';
+						$fpcCloneLeftEnd->{$besSequence[2]} = 0;
+						$fpcCloneRightEnd->{$besSequence[2]} = 0;
+						if ($getFpcClone[8] =~ /Map "(.*)" Ends Left (\d*)/)
+						{
+							$fpcContig->{$besSequence[2]} = ucfirst ($1);
+							$fpcCloneLeftEnd->{$besSequence[2]} = $2;
+						}
+						if ($getFpcClone[8] =~ /Ends Right (\d*)/)
+						{
+							$fpcCloneRightEnd->{$besSequence[2]} = $1;
+						}
 					}
-		);
-		my $besSequence=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-		$besSequence->execute($besList[2]);
-		my @besSequence = $besSequence->fetchrow_array();
 
-		$fpcContig->{$besSequence[2]} = "None" unless (exists $fpcContig->{$besSequence[2]});
-		$fpcCloneLeftEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneLeftEnd->{$besSequence[2]});
-		$fpcCloneRightEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneRightEnd->{$besSequence[2]});
-
-		my $getFpcClone = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'fpcClone' AND name LIKE ?");
-		$getFpcClone->execute($besSequence[2]);
-		while (my @getFpcClone = $getFpcClone->fetchrow_array())
-		{
-			$fpcContig->{$besSequence[2]} = 'Ctg0';
-			$fpcCloneLeftEnd->{$besSequence[2]} = 0;
-			$fpcCloneRightEnd->{$besSequence[2]} = 0;
-			if ($getFpcClone[8] =~ /Map "(.*)" Ends Left (\d*)/)
-			{
-				$fpcContig->{$besSequence[2]} = ucfirst ($1);
-				$fpcCloneLeftEnd->{$besSequence[2]} = $2;
+					if (exists $besLeftPosition->{$besSequence[2]})
+					{
+						my $besDistance = $besList[8] - $besLeftPosition->{$besSequence[2]};
+						next if($besDistance > 300000 || $besDistance < 25000);
+						next if($besLeftDirection->{$besSequence[2]} == $besSequence[6]);
+						push @lengthList,$besDistance;
+						$besRightDirection->{$besSequence[2]} = $besSequence[6];
+						$besRightPosition->{$besSequence[2]} = ($besList[9] > $besList[8]) ? $besList[9] : $besList[8];
+						$besRightAlignment->{$besSequence[2]} = ($besList[9] > $besList[8]) ? "+" : "-";
+						$totalLength += $besDistance;
+						if($besLeftAlignment->{$besSequence[2]} eq $besRightAlignment->{$besSequence[2]})
+						{
+							print BES "$besSequence[2]\t$refSequence[2]\t$besLeftPosition->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$besSequence[2]}\t=\t$fpcContig->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}\n";
+						}
+						else
+						{
+							print BES "$besSequence[2]\t$refSequence[2]\t$besLeftPosition->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$besSequence[2]}\t$besRightAlignment->{$besSequence[2]}\t$fpcContig->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}\n";
+						}
+					}
+					else
+					{
+						$besLeftPosition->{$besSequence[2]} = ($besList[9] > $besList[8]) ? $besList[8] : $besList[9];
+						$besLeftDirection->{$besSequence[2]} = $besSequence[6];
+						$besLeftAlignment->{$besSequence[2]} = ($besList[9] > $besList[8]) ? "+" : "-";
+					}
+				}
+				close(TBL);			
 			}
-			if ($getFpcClone[8] =~ /Ends Right (\d*)/)
-			{
-				$fpcCloneRightEnd->{$besSequence[2]} = $1;
-			}
-		}
-
-		if (exists $besLeftPosition->{$besSequence[2]})
-		{
-			my $besDistance = $besList[10] - $besLeftPosition->{$besSequence[2]};
- 			next if($besDistance > 300000 || $besDistance < 25000);
- 			next if($besLeftDirection->{$besSequence[2]} == $besSequence[6]);
-			push @lengthList,$besDistance;
-			$besRightDirection->{$besSequence[2]} = $besSequence[6];
-			$besRightPosition->{$besSequence[2]} = ($besList[11] > $besList[10]) ? $besList[11] : $besList[10];
-			$besRightAlignment->{$besSequence[2]} = ($besList[11] > $besList[10]) ? "+" : "-";
-			$totalLength += $besDistance;
-			if($besLeftAlignment->{$besSequence[2]} eq $besRightAlignment->{$besSequence[2]})
-			{
-				print BES "$besSequence[2]\t$refSequence[2]\t$besLeftPosition->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$besSequence[2]}\t=\t$fpcContig->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}\n";
-			}
-			else
-			{
-				print BES "$besSequence[2]\t$refSequence[2]\t$besLeftPosition->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$besSequence[2]}\t$besRightAlignment->{$besSequence[2]}\t$fpcContig->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}\n";
-			}
-		}
-		else
-		{
-			$besLeftPosition->{$besSequence[2]} = ($besList[11] > $besList[10]) ? $besList[10] : $besList[11];
-			$besLeftDirection->{$besSequence[2]} = $besSequence[6];
-			$besLeftAlignment->{$besSequence[2]} = ($besList[11] > $besList[10]) ? "+" : "-";
 		}
 	}
 	close (BES);
 	`gzip -f '$commoncfg->{TMPDIR}/BES-$refSequence[2].txt'`;
 	my $besEvaluation = "<a href='$commoncfg->{TMPURL}/BES-$refSequence[2].txt.gz' target='hiddenFrame'><span class='ui-icon ui-icon-bullet'></span>BES Evaluation</a>" if (-e "$commoncfg->{TMPDIR}/BES-$refSequence[2].txt.gz");
-
-
 	my @besCloneList = sort { $besLeftPosition->{$a} <=> $besLeftPosition->{$b} } keys %$besRightPosition;
 
     my $besClone=$svg->group(
@@ -480,6 +505,8 @@ if ($seqId)
 	`gzip -f '$commoncfg->{TMPDIR}/BES-$refSequence[2].svg'`;
 	my $besSvg = "<a href='$commoncfg->{TMPURL}/BES-$refSequence[2].svg.gz' target='hiddenFrame'><span class='ui-icon ui-icon-bullet'></span>SVG</a>" if (-e "$commoncfg->{TMPDIR}/BES-$refSequence[2].svg.gz");
 
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$besEvaluation/$besEvaluation/g;
 	$html =~ s/\$besSvg/$besSvg/g;
 	$html =~ s/\$seqDetails/$seqDetails/g;

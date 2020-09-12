@@ -77,6 +77,7 @@ END
 					open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySeq[5]-$genomeSeq[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySeq[5]-$genomeSeq[0].tbl";
 					while(<TBL>)
 					{
+						chop;
 						/^#/ and next;
 						my @getAlignment = split("\t",$_);
 						if ($assemblySeq[7] > 0)

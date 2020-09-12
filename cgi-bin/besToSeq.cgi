@@ -152,9 +152,9 @@ END
 		open (CMD,"$alignEngineList->{$alignEngine} -query $commoncfg->{TMPDIR}/$libraryId.$$.bes -db $commoncfg->{TMPDIR}/$targetId.$$.seq -dust no -evalue 1e-200 -perc_identity $identityBesToSeq -num_threads 8 -outfmt 6 |") or die "can't open CMD: $!";
 		while(<CMD>)
 		{
+			chop;
 			/^#/ and next;
 			my @hit = split("\t",$_);
-			$hit[11] =~ s/\W//g;
 			$hit[12] = 0; #add a hidden column
 			next if($hit[3] < $minOverlapBesToSeq);
 

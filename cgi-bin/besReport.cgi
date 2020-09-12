@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %seqDir = (
 	0=>'NA',
 	1=>'f',
@@ -28,97 +25,14 @@ my %seqDir = (
 if(param ('libraryId'))
 {
 	my $libraryId = param ('libraryId');
-	my $targetGenome;
-	my @targetGenome;
-	my $besToGenome;
-	my $besIdToGenome;
-	my $genomeList=$dbh->prepare("SELECT * FROM matrix WHERE z = ? AND container LIKE 'genome'");
-	$genomeList->execute($libraryId);
-	while (my @genomeList = $genomeList->fetchrow_array())
-	{
-		$targetGenome->{$genomeList[0]} = $genomeList[2];
-		push @targetGenome,$genomeList[0];
-
-		my $refSequence=$dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 99 AND x = ? ORDER BY y DESC");
-		$refSequence->execute($genomeList[0]);
-		while (my @refSequence = $refSequence->fetchrow_array())
-		{
-			my $refSequenceDetails = decode_json $refSequence[8];
-			$refSequenceDetails->{'id'} = '' unless (exists $refSequenceDetails->{'id'});
-			$refSequenceDetails->{'description'} = '' unless (exists $refSequenceDetails->{'description'});
-			$refSequenceDetails->{'gapList'} = '' unless (exists $refSequenceDetails->{'gapList'});
-			$refSequenceDetails->{'filter'} = '' unless (exists $refSequenceDetails->{'filter'});
-			my $besLeftPosition;
-			my $besRightPosition;
-			my $besLeftDirection;
-			my $besRightDirection;
-			my $besLeftAlignment;
-			my $besRightAlignment;
-			my $fpcView;
-			my $fpcCloneLeftEnd;
-			my $fpcCloneRightEnd;
-			my $besList=$dbh->prepare("SELECT * FROM alignment WHERE subject = ? AND program LIKE 'BES%' AND perc_indentity >= 95 ORDER BY s_start");
-			$besList->execute($refSequence[0]);
-			while (my @besList = $besList->fetchrow_array())
-			{
-				$besIdToGenome->{$genomeList[0]}->{$besList[2]} = 1;
-				my $besSequence=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-				$besSequence->execute($besList[2]);
-				my @besSequence = $besSequence->fetchrow_array();
-
-				$fpcView->{$besSequence[2]} = "None" unless (exists $fpcView->{$besSequence[2]});
-				$fpcCloneLeftEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneLeftEnd->{$besSequence[2]});
-				$fpcCloneRightEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneRightEnd->{$besSequence[2]});
-				my $getFpcClone = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'fpcClone' AND name LIKE ?");
-				$getFpcClone->execute($besSequence[2]);
-				while (my @getFpcClone = $getFpcClone->fetchrow_array())
-				{
-					$fpcView->{$besSequence[2]} = 'Ctg0';
-					$fpcCloneLeftEnd->{$besSequence[2]} = 0;
-					$fpcCloneRightEnd->{$besSequence[2]} = 0;
-					if ($getFpcClone[8] =~ /Map "(.*)" Ends Left (\d*)/)
-					{
-						$fpcView->{$besSequence[2]} = ucfirst ($1);
-						$fpcCloneLeftEnd->{$besSequence[2]} = $2;
-					}
-					if ($getFpcClone[8] =~ /Ends Right (\d*)/)
-					{
-						$fpcCloneRightEnd->{$besSequence[2]} = $1;
-					}
-				}
-
-				if (exists $besLeftPosition->{$refSequence[0]}->{$besSequence[2]})
-				{
-					my $besDistance = $besList[10] - $besLeftPosition->{$refSequence[0]}->{$besSequence[2]};
-					next if($besDistance > 300000 || $besDistance < 25000);
-					next if($besLeftDirection->{$refSequence[0]}->{$besSequence[2]} == $besSequence[6]);
-					$besRightDirection->{$refSequence[0]}->{$besSequence[2]} = $besSequence[6];
-					$besRightPosition->{$refSequence[0]}->{$besSequence[2]} = ($besList[11] > $besList[10]) ? $besList[11] : $besList[10];
-					$besRightAlignment->{$refSequence[0]}->{$besSequence[2]} = ($besList[11] > $besList[10]) ? "+" : "-";
-					$besToGenome->{$genomeList[0]}->{$besSequence[2]} = ($besLeftAlignment->{$refSequence[0]}->{$besSequence[2]} eq $besRightAlignment->{$refSequence[0]}->{$besSequence[2]}) ? "$refSequence[2]\t$besLeftPosition->{$refSequence[0]}->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$refSequence[0]}->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$refSequence[0]}->{$besSequence[2]}\t=\t$fpcView->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}" :
-						"$refSequence[2]\t$besLeftPosition->{$refSequence[0]}->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$refSequence[0]}->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$refSequence[0]}->{$besSequence[2]}\t$besRightAlignment->{$refSequence[0]}->{$besSequence[2]}\t$fpcView->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}";
-				}
-				else
-				{
-					$besLeftPosition->{$refSequence[0]}->{$besSequence[2]} = ($besList[11] > $besList[10]) ? $besList[10] : $besList[11];
-					$besLeftDirection->{$refSequence[0]}->{$besSequence[2]} = $besSequence[6];
-					$besLeftAlignment->{$refSequence[0]}->{$besSequence[2]} = ($besList[11] > $besList[10]) ? "+" : "-";
-				}
-			}
-		}
-	}
-
 	my $besClone;
 	my $paredBes;
 	my $singleEndCount;
-	my $getSequences = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 98 AND x = ? ORDER BY name,id");
+	my $getSequences = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 98 AND x = ?");
 	$getSequences->execute($libraryId);
 	while(my @getSequences =  $getSequences->fetchrow_array())
 	{
 		my $sequenceDetails = decode_json $getSequences[8];
-		$sequenceDetails->{'id'} = '' unless (exists $sequenceDetails->{'id'});
-		$sequenceDetails->{'description'} = '' unless (exists $sequenceDetails->{'description'});
-		$sequenceDetails->{'gapList'} = '' unless (exists $sequenceDetails->{'gapList'});
 		$besClone->{$getSequences[2]} .= "$seqDir{$getSequences[6]}:$getSequences[5] ";
 		$paredBes->{$getSequences[2]} .= $seqDir{$getSequences[6]};
 		$singleEndCount->{$seqDir{$getSequences[6]}}++;
@@ -132,6 +46,104 @@ if(param ('libraryId'))
 	my $totalClone = keys %$besClone;
 	my $totalBes = $getSequences->rows; 
 	$totalBes = "$totalBes ($singleEnd) BESs";
+
+	my $targetGenome;
+	my @targetGenome;
+	my $besToGenome;
+	my $besIdToGenome;
+	my $genomeList=$dbh->prepare("SELECT * FROM matrix WHERE z = ? AND container LIKE 'genome'");
+	$genomeList->execute($libraryId);
+	while (my @genomeList = $genomeList->fetchrow_array())
+	{
+		$targetGenome->{$genomeList[0]} = $genomeList[2];
+		push @targetGenome,$genomeList[0];
+		my $queryDirLibrary;
+		for (my $position = 0; $position < length($libraryId); $position += 2)
+		{
+			$queryDirLibrary .= "/q". substr($libraryId,$position,2);
+		}
+		my $subjectDirGenome;
+		for (my $position = 0; $position < length($genomeList[0]); $position += 2)
+		{
+			$subjectDirGenome .= "/s". substr($genomeList[0],$position,2);
+		}
+		if (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLibrary$subjectDirGenome/$libraryId-$genomeList[0].list")
+		{
+			my $besLeftPosition;
+			my $besRightPosition;
+			my $besLeftDirection;
+			my $besRightDirection;
+			my $besLeftAlignment;
+			my $besRightAlignment;
+			my $fpcView;
+			my $fpcCloneLeftEnd;
+			my $fpcCloneRightEnd;
+			open (LIST,"$commoncfg->{DATADIR}/alignments/setToSet$queryDirLibrary$subjectDirGenome/$libraryId-$genomeList[0].list") or die "can't open file: $commoncfg->{DATADIR}/alignments/setToSet$queryDirLibrary$subjectDirGenome/$libraryId-$genomeList[0].list";
+			while (<LIST>)
+			{
+				chop;
+				open (TBL, "$commoncfg->{DATADIR}/$_") or die "can't open file: $commoncfg->{DATADIR}/$_";
+				while(<TBL>)
+				{
+					chop;
+					/^#/ and next;
+					my @besList = split("\t",$_);
+					next if ($besList[12] > 0);
+					next if ($besList[2] < 95);
+
+					$besIdToGenome->{$genomeList[0]}->{$besList[0]} = 1;
+					my $besSequence=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+					$besSequence->execute($besList[0]);
+					my @besSequence = $besSequence->fetchrow_array();
+					my $refSequence=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+					$refSequence->execute($besList[1]);
+					my @refSequence = $refSequence->fetchrow_array();
+
+					$fpcView->{$besSequence[2]} = "None" unless (exists $fpcView->{$besSequence[2]});
+					$fpcCloneLeftEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneLeftEnd->{$besSequence[2]});
+					$fpcCloneRightEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneRightEnd->{$besSequence[2]});
+					my $getFpcClone = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'fpcClone' AND name LIKE ?");
+					$getFpcClone->execute($besSequence[2]);
+					while (my @getFpcClone = $getFpcClone->fetchrow_array())
+					{
+						$fpcView->{$besSequence[2]} = 'Ctg0';
+						$fpcCloneLeftEnd->{$besSequence[2]} = 0;
+						$fpcCloneRightEnd->{$besSequence[2]} = 0;
+						if ($getFpcClone[8] =~ /Map "(.*)" Ends Left (\d*)/)
+						{
+							$fpcView->{$besSequence[2]} = ucfirst ($1);
+							$fpcCloneLeftEnd->{$besSequence[2]} = $2;
+						}
+						if ($getFpcClone[8] =~ /Ends Right (\d*)/)
+						{
+							$fpcCloneRightEnd->{$besSequence[2]} = $1;
+						}
+					}
+
+					if (exists $besLeftPosition->{$besList[1]}->{$besSequence[2]})
+					{
+						my $besDistance = $besList[8] - $besLeftPosition->{$besList[1]}->{$besSequence[2]};
+						next if($besDistance > 300000 || $besDistance < 25000);
+						next if($besLeftDirection->{$besList[1]}->{$besSequence[2]} == $besSequence[6]);
+						$besRightDirection->{$besList[1]}->{$besSequence[2]} = $besSequence[6];
+						$besRightPosition->{$besList[1]}->{$besSequence[2]} = ($besList[9] > $besList[8]) ? $besList[9] : $besList[8];
+						$besRightAlignment->{$besList[1]}->{$besSequence[2]} = ($besList[9] > $besList[8]) ? "+" : "-";
+						$besToGenome->{$genomeList[0]}->{$besSequence[2]} = ($besLeftAlignment->{$besList[1]}->{$besSequence[2]} eq $besRightAlignment->{$besList[1]}->{$besSequence[2]}) ? "$refSequence[2]\t$besLeftPosition->{$besList[1]}->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$besList[1]}->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$besList[1]}->{$besSequence[2]}\t=\t$fpcView->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}" :
+							"$refSequence[2]\t$besLeftPosition->{$besList[1]}->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$besList[1]}->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$besList[1]}->{$besSequence[2]}\t$besRightAlignment->{$besList[1]}->{$besSequence[2]}\t$fpcView->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}";
+					}
+					else
+					{
+						$besLeftPosition->{$besList[1]}->{$besSequence[2]} = ($besList[9] > $besList[8]) ? $besList[8] : $besList[9];
+						$besLeftDirection->{$besList[1]}->{$besSequence[2]} = $besSequence[6];
+						$besLeftAlignment->{$besList[1]}->{$besSequence[2]} = ($besList[9] > $besList[8]) ? "+" : "-";
+					}
+				}
+				close(TBL);
+			}
+			close(LIST);
+		}
+	}
+
 	my $besDetails = "<table id='bes$$' class='display' style='width: 100%;'>
 			<thead>
 				<tr style='text-align:left'>
@@ -188,6 +200,9 @@ if(param ('libraryId'))
 	close (BESTEXT);
 	`gzip -f $commoncfg->{TMPDIR}/BES-report.$libraryId.html`;
 	my $besReport = "<a href='$commoncfg->{TMPURL}/BES-report.$libraryId.html.gz' target='hiddenFrame'>Download Details</a>" if (-e "$commoncfg->{TMPDIR}/BES-report.$libraryId.html.gz");
+
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$besReport/$besReport/g;
 	$html =~ s/\$totalClone/$totalClone/g;
 	$html =~ s/\$totalBes/$totalBes/g;
