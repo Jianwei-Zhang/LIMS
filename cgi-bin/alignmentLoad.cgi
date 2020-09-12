@@ -140,8 +140,8 @@ END
 		my $queryDirSwitched;
 		my $subjectDirSwitched;
 
-		open(ALN, "$alignmentInfile") or die "cannot open file $alignmentInfile";
-		while(<ALN>)
+		open(TBL, "$alignmentInfile") or die "cannot open file $alignmentInfile";
+		while(<TBL>)
 		{
 			chop;
 			/^#/ and next;
@@ -295,7 +295,7 @@ END
 				next;
 			}
 		}
-		close(ALN);
+		close(TBL);
 		unlink ($alignmentInfile);
 
 		foreach my $sequenceId (keys %$seqToSet)
