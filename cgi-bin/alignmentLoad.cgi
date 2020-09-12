@@ -177,7 +177,7 @@ END
 					until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl")
 					{
 						open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl";
-						print ALN "#$alignEngine\_1e-200\_$identityAlignment\_$minOverlapAlignment\n";
+						print ALN "#$alignEngine\_manual_loading\n";
 						print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
 						close(ALN);
 					}

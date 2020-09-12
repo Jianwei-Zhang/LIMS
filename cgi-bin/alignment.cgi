@@ -138,6 +138,9 @@ END
 		}
 		close(SEQALL);
 
+		my $subjectGenome=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+		$subjectGenome->execute($subjectGenomeId);
+		my @subjectGenome = $subjectGenome->fetchrow_array();
 		my $subjectFile = "";
 		if($queryGenomeId eq $subjectGenomeId)
 		{
@@ -147,9 +150,6 @@ END
 		{
 			$subjectFile = "$commoncfg->{TMPDIR}/$subjectGenomeId.$$.seq";
 
-			my $subjectGenome=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-			$subjectGenome->execute($subjectGenomeId);
-			my @subjectGenome = $subjectGenome->fetchrow_array();
 			open (SEQALL,">$subjectFile") or die "can't open file: $subjectFile";
 			if($subjectGenome[1] eq 'library')
 			{
