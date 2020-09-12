@@ -100,38 +100,41 @@ END
 			{
 				$subjectDir .= "/s". substr($getSequenceB[0],$position,2);
 			}
-			open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$getSequenceA[0]-$getSequenceB[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$getSequenceA[0]-$getSequenceB[0].tbl";
-			while(<TBL>)
+			if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$getSequenceA[0]-$getSequenceB[0].tbl")
 			{
-				chop;
-				/^#/ and next;
-				my @hit = split("\t",$_);
-				next if ($hit[12] > 0);
-				my $direction = ($hit[8] < $hit[9]) ? "+":"-";
-				$hit[3] = commify($hit[3]);				
-				$hit[6] = commify($hit[6]);
-				$hit[7] = commify($hit[7]);
-				$hit[8] = commify($hit[8]);
-				$hit[9] = commify($hit[9]);
-				$hit[6] = "<a class='ui-state-error-text' title='Seq End'>$hit[6]</a>" if($hit[6] eq 1 || $hit[6] eq $getSequenceA[5]);
-				$hit[7] = "<a class='ui-state-error-text' title='Seq End'>$hit[7]</a>" if($hit[7] eq 1 || $hit[7] eq $getSequenceA[5]);
-				$hit[8] = "<a class='ui-state-error-text' title='Seq End'>$hit[8]</a>" if($hit[8] eq 1 || $hit[8] eq $getSequenceB[5]);
-				$hit[9] = "<a class='ui-state-error-text' title='Seq End'>$hit[9]</a>" if($hit[9] eq 1 || $hit[9] eq $getSequenceB[5]);
-				print ALN "<tr>
-					<td><a onclick='closeDialog();openDialog(\"seqView.cgi?seqId=$getSequenceA[0]\")' title='View this sequence'>$seqType{$getSequenceA[3]}</a> ($getSequenceA[4]) $bacAssignType{$getSequenceA[7]}</td>
-					<td>$getSequenceA[5]</td>
-					<td><a onclick='closeDialog();openDialog(\"seqView.cgi?seqId=$getSequenceB[0]\")' title='View this sequence'>$seqType{$getSequenceB[3]}</a> ($getSequenceB[4]) $bacAssignType{$getSequenceB[7]}</td>
-					<td>$getSequenceB[5]</td>
-					<td><a title='E-value:$hit[10] \nBit-score:$hit[11]'>$hit[2]</a></td>
-					<td>$hit[3]</td>
-					<td>$hit[6]</td>
-					<td>$hit[7]</td>
-					<td>$direction</td>
-					<td>$hit[8]</td>
-					<td>$hit[9]</td>
-					</tr>";
+				open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$getSequenceA[0]-$getSequenceB[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$getSequenceA[0]-$getSequenceB[0].tbl";
+				while(<TBL>)
+				{
+					chop;
+					/^#/ and next;
+					my @hit = split("\t",$_);
+					next if ($hit[12] > 0);
+					my $direction = ($hit[8] < $hit[9]) ? "+":"-";
+					$hit[3] = commify($hit[3]);				
+					$hit[6] = commify($hit[6]);
+					$hit[7] = commify($hit[7]);
+					$hit[8] = commify($hit[8]);
+					$hit[9] = commify($hit[9]);
+					$hit[6] = "<a class='ui-state-error-text' title='Seq End'>$hit[6]</a>" if($hit[6] eq 1 || $hit[6] eq $getSequenceA[5]);
+					$hit[7] = "<a class='ui-state-error-text' title='Seq End'>$hit[7]</a>" if($hit[7] eq 1 || $hit[7] eq $getSequenceA[5]);
+					$hit[8] = "<a class='ui-state-error-text' title='Seq End'>$hit[8]</a>" if($hit[8] eq 1 || $hit[8] eq $getSequenceB[5]);
+					$hit[9] = "<a class='ui-state-error-text' title='Seq End'>$hit[9]</a>" if($hit[9] eq 1 || $hit[9] eq $getSequenceB[5]);
+					print ALN "<tr>
+						<td><a onclick='closeDialog();openDialog(\"seqView.cgi?seqId=$getSequenceA[0]\")' title='View this sequence'>$seqType{$getSequenceA[3]}</a> ($getSequenceA[4]) $bacAssignType{$getSequenceA[7]}</td>
+						<td>$getSequenceA[5]</td>
+						<td><a onclick='closeDialog();openDialog(\"seqView.cgi?seqId=$getSequenceB[0]\")' title='View this sequence'>$seqType{$getSequenceB[3]}</a> ($getSequenceB[4]) $bacAssignType{$getSequenceB[7]}</td>
+						<td>$getSequenceB[5]</td>
+						<td><a title='E-value:$hit[10] \nBit-score:$hit[11]'>$hit[2]</a></td>
+						<td>$hit[3]</td>
+						<td>$hit[6]</td>
+						<td>$hit[7]</td>
+						<td>$direction</td>
+						<td>$hit[8]</td>
+						<td>$hit[9]</td>
+						</tr>";
+				}
+				close(TBL);
 			}
-			close(TBL);
 
 			$alignmentCheckFormUrl .= "&seqOne=$seqOne&seqTwo=$seqTwo";
 			$blastTwoseqFormUrl .= "&seqOne=$seqOne&seqTwo=$seqTwo";

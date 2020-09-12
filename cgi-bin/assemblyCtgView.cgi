@@ -457,63 +457,66 @@ if ($assemblyCtgId)
 			{
 				$subjectDir .= "/s". substr($assemblySequenceId->{$currentSeq},$position,2);
 			}
-			my $alignmentCount = 0;
-			open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$preSeq}-$assemblySequenceId->{$currentSeq}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$preSeq}-$assemblySequenceId->{$currentSeq}.tbl";
-			while(<TBL>)
+			if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$preSeq}-$assemblySequenceId->{$currentSeq}.tbl")
 			{
-				chop;
-				/^#/ and next;
-				$alignmentCount++;
-				my @alignments = split("\t",$_);
-				next if ($alignments[12] > 0);
-				next if ($alignments[3] < $alignmentLength); #skip if alignment shorter than alignmentLength
-				my $preXOne = 0;
-				my $preXTwo = 0;
-				if($assemblySeqOrient->{$preSeq} eq "+")
+				my $alignmentCount = 0;
+				open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$preSeq}-$assemblySequenceId->{$currentSeq}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$preSeq}-$assemblySequenceId->{$currentSeq}.tbl";
+				while(<TBL>)
 				{
-					$preXOne = $margin + ($assemblySeqLeftEnd->{$preSeq} + $alignments[6] - 1) / $pixelUnit;
-					$preXTwo = $margin + ($assemblySeqLeftEnd->{$preSeq} + $alignments[7] - 1) / $pixelUnit;
+					chop;
+					/^#/ and next;
+					$alignmentCount++;
+					my @alignments = split("\t",$_);
+					next if ($alignments[12] > 0);
+					next if ($alignments[3] < $alignmentLength); #skip if alignment shorter than alignmentLength
+					my $preXOne = 0;
+					my $preXTwo = 0;
+					if($assemblySeqOrient->{$preSeq} eq "+")
+					{
+						$preXOne = $margin + ($assemblySeqLeftEnd->{$preSeq} + $alignments[6] - 1) / $pixelUnit;
+						$preXTwo = $margin + ($assemblySeqLeftEnd->{$preSeq} + $alignments[7] - 1) / $pixelUnit;
+					}
+					else
+					{
+						$preXOne = $margin + ($assemblySeqRightEnd->{$preSeq} - $alignments[6] + 1) / $pixelUnit;
+						$preXTwo = $margin + ($assemblySeqRightEnd->{$preSeq} - $alignments[7] + 1) / $pixelUnit;
+					}
+					my $currentXOne = 0;
+					my $currentXTwo = 0;
+					if($assemblySeqOrient->{$currentSeq} eq "+")
+					{
+						$currentXOne = $margin + ($assemblySeqLeftEnd->{$currentSeq} + $alignments[8] - 1) / $pixelUnit;
+						$currentXTwo = $margin + ($assemblySeqLeftEnd->{$currentSeq} + $alignments[9] - 1) / $pixelUnit;
+					}
+					else
+					{
+						$currentXOne = $margin + ($assemblySeqRightEnd->{$currentSeq} - $alignments[8] + 1) / $pixelUnit;
+						$currentXTwo = $margin + ($assemblySeqRightEnd->{$currentSeq} - $alignments[9] + 1) / $pixelUnit;
+					}		
+					my $xv = [$preXOne,$preXTwo,$currentXTwo,$currentXOne];
+					my $yv = [$preY,$preY,$currentY,$currentY];
+					my $points = $assemblyCtgSeqAlignment->get_path(
+						x=>$xv,
+						y=>$yv,
+						-type=>'polygon'
+					);
+					$assemblyCtgSeqAlignment->polygon(
+						%$points,
+						id=>$alignments[0].$alignments[1].$alignmentCount,
+						onclick => "closeDialog();openDialog('alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount')",
+						class=>'hasmenuForAlignment',
+						style=>{ stroke => 'red',
+							fill => 'yellow',
+							opacity => 0.5
+							},
+						'overlap-url' => "assemblyCtgOverlap.cgi?assemblyCtgId=$assemblyCtgId&alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&scrollLeft=$preXOne",
+						'hide-url' => "assemblyAlignmentHide.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&assemblyCtgId=$assemblyCtgId&scrollLeft=$preXOne",
+						'view-url' => "alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount",
+						'move-url' => "assemblyCtgEdit.cgi?assemblyCtgId=$assemblyCtgId&scrollLeft=$preXOne"
+					);
 				}
-				else
-				{
-					$preXOne = $margin + ($assemblySeqRightEnd->{$preSeq} - $alignments[6] + 1) / $pixelUnit;
-					$preXTwo = $margin + ($assemblySeqRightEnd->{$preSeq} - $alignments[7] + 1) / $pixelUnit;
-				}
-				my $currentXOne = 0;
-				my $currentXTwo = 0;
-				if($assemblySeqOrient->{$currentSeq} eq "+")
-				{
-					$currentXOne = $margin + ($assemblySeqLeftEnd->{$currentSeq} + $alignments[8] - 1) / $pixelUnit;
-					$currentXTwo = $margin + ($assemblySeqLeftEnd->{$currentSeq} + $alignments[9] - 1) / $pixelUnit;
-				}
-				else
-				{
-					$currentXOne = $margin + ($assemblySeqRightEnd->{$currentSeq} - $alignments[8] + 1) / $pixelUnit;
-					$currentXTwo = $margin + ($assemblySeqRightEnd->{$currentSeq} - $alignments[9] + 1) / $pixelUnit;
-				}		
-				my $xv = [$preXOne,$preXTwo,$currentXTwo,$currentXOne];
-				my $yv = [$preY,$preY,$currentY,$currentY];
-				my $points = $assemblyCtgSeqAlignment->get_path(
-					x=>$xv,
-					y=>$yv,
-					-type=>'polygon'
-				);
-				$assemblyCtgSeqAlignment->polygon(
-					%$points,
-					id=>$alignments[0].$alignments[1].$alignmentCount,
-					onclick => "closeDialog();openDialog('alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount')",
-					class=>'hasmenuForAlignment',
-					style=>{ stroke => 'red',
-						fill => 'yellow',
-						opacity => 0.5
-						},
-					'overlap-url' => "assemblyCtgOverlap.cgi?assemblyCtgId=$assemblyCtgId&alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&scrollLeft=$preXOne",
-					'hide-url' => "assemblyAlignmentHide.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&assemblyCtgId=$assemblyCtgId&scrollLeft=$preXOne",
-					'view-url' => "alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount",
-					'move-url' => "assemblyCtgEdit.cgi?assemblyCtgId=$assemblyCtgId&scrollLeft=$preXOne"
-				);
+				close(TBL);
 			}
-			close(TBL);
 		}
     	$assemblySeqMaxEnd = $assemblySeqRightEnd->{$currentSeq} if($assemblySeqMaxEnd < $assemblySeqRightEnd->{$currentSeq});
  
@@ -526,7 +529,6 @@ if ($assemblyCtgId)
 					$assemblyCtgLength += $gapLength;
 					$lastComponentType = 'U';
 					#graphic to be added
-				
 				}
 			}
     	}

@@ -346,7 +346,6 @@ END
 				}
 			}
 
-
 			open (GAPFILL,">$commoncfg->{TMPDIR}/$assemblyId-$ctgOne-$ctgTwo.gapfill.html") or die "can't open file: $commoncfg->{TMPDIR}/$assemblyId-$ctgOne-$ctgTwo.gapfill.html";
 			print GAPFILL <<END;
 <div id='gapFillerDiv$$' name='gapFillerDiv$$'>

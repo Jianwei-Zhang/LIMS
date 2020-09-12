@@ -522,17 +522,20 @@ END
 							{
 								$subjectDir .= "/s". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i]},$position,2);
 							}
-							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}.tbl";
-							while(<TBL>)
+							if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}.tbl")
 							{
-								chop;
-								/^#/ and next;
-								my @getAlignment = split("\t",$_);
-								$startFound = 1 if ($getAlignment[6] == 1);
-								$endFound = 1 if ($getAlignment[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}});
-								$coveredLength += $getAlignment[7] - $getAlignment[6] + 1;
+								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}.tbl";
+								while(<TBL>)
+								{
+									chop;
+									/^#/ and next;
+									my @getAlignment = split("\t",$_);
+									$startFound = 1 if ($getAlignment[6] == 1);
+									$endFound = 1 if ($getAlignment[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}});
+									$coveredLength += $getAlignment[7] - $getAlignment[6] + 1;
+								}
+								close(TBL);
 							}
-							close(TBL);
 
 							if ($startFound > 0 && $endFound > 0 && $coveredLength / $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}} >= 0.99)
 							{
@@ -554,17 +557,20 @@ END
 							{
 								$subjectDir .= "/s". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]},$position,2);
 							}
-							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl";
-							while(<TBL>)
+							if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl")
 							{
-								chop;
-								/^#/ and next;
-								my @getAlignment = split("\t",$_);
-								$startFound = 1 if ($getAlignment[6] == 1);
-								$endFound = 1 if ($getAlignment[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
-								$coveredLength += $getAlignment[7] - $getAlignment[6] + 1;
+								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl";
+								while(<TBL>)
+								{
+									chop;
+									/^#/ and next;
+									my @getAlignment = split("\t",$_);
+									$startFound = 1 if ($getAlignment[6] == 1);
+									$endFound = 1 if ($getAlignment[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
+									$coveredLength += $getAlignment[7] - $getAlignment[6] + 1;
+								}
+								close(TBL);
 							}
-							close(TBL);
 							if ($startFound > 0 && $endFound > 0 && $coveredLength / $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}} >= 0.99)
 							{
 								$assemblyMultiCtgList[8] =~ s/\($seqInCtg[$i]\)/-($seqInCtg[$i])/g;
@@ -636,17 +642,20 @@ END
 								{
 									$subjectDirPre .= "/s". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]},$position,2);
 								}
-								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirPre$subjectDirPre/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirPre$subjectDirPre/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl";
-								while(<TBL>)
+								if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirPre$subjectDirPre/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl")
 								{
-									chop;
-									/^#/ and next;
-									my @getAlignmentPre = split("\t",$_);
-									$startFound = 1 if ($getAlignmentPre[6] == 1);
-									$endFound = 1 if ($getAlignmentPre[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
-									$coveredLength += $getAlignmentPre[7] - $getAlignmentPre[6] + 1;
+									open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirPre$subjectDirPre/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirPre$subjectDirPre/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i-1]}.tbl";
+									while(<TBL>)
+									{
+										chop;
+										/^#/ and next;
+										my @getAlignmentPre = split("\t",$_);
+										$startFound = 1 if ($getAlignmentPre[6] == 1);
+										$endFound = 1 if ($getAlignmentPre[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
+										$coveredLength += $getAlignmentPre[7] - $getAlignmentPre[6] + 1;
+									}
+									close(TBL);
 								}
-								close(TBL);
 
 								my $queryDirNext;
 								for (my $position = 0; $position < length($sequenceIdOfAssemblySeq->{$seqInCtg[$i]}); $position += 2)
@@ -658,17 +667,20 @@ END
 								{
 									$subjectDirNext .= "/s". substr($sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]},$position,2);
 								}
-								open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirNext$subjectDirNext/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirNext$subjectDirNext/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl";
-								while(<TBL>)
+								if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirNext$subjectDirNext/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl")
 								{
-									chop;
-									/^#/ and next;
-									my @getAlignmentNext = split("\t",$_);
-									$startFound = 1 if ($getAlignmentNext[6] == 1);
-									$endFound = 1 if ($getAlignmentNext[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
-									$coveredLength += $getAlignmentNext[7] - $getAlignmentNext[6] + 1;
+									open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirNext$subjectDirNext/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirNext$subjectDirNext/$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}-$sequenceIdOfAssemblySeq->{$seqInCtg[$i+1]}.tbl";
+									while(<TBL>)
+									{
+										chop;
+										/^#/ and next;
+										my @getAlignmentNext = split("\t",$_);
+										$startFound = 1 if ($getAlignmentNext[6] == 1);
+										$endFound = 1 if ($getAlignmentNext[7] == $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}});
+										$coveredLength += $getAlignmentNext[7] - $getAlignmentNext[6] + 1;
+									}
+									close(TBL);
 								}
-								close(TBL);
 								if ($startFound > 0 && $endFound > 0 && $coveredLength / $sequenceLength->{$sequenceIdOfAssemblySeq->{$seqInCtg[$i]}} > 1)
 								{
 									$assemblyMultiCtgList[8] =~ s/\($seqInCtg[$i]\)/-($seqInCtg[$i])/g;
@@ -727,29 +739,32 @@ END
 					{
 						$subjectDirTwo .= "/s". substr($currentAssemblySeq[5],$position,2);
 					}
-					open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo$subjectDirTwo/$preAssemblySeq[5]-$currentAssemblySeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo$subjectDirTwo/$preAssemblySeq[5]-$currentAssemblySeq[5].tbl";
-					while(<TBL>)
+					if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo$subjectDirTwo/$preAssemblySeq[5]-$currentAssemblySeq[5].tbl")
 					{
-						chop;
-						/^#/ and next;
-						my @getAlignmentTwo = split("\t",$_);
+						open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo$subjectDirTwo/$preAssemblySeq[5]-$currentAssemblySeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo$subjectDirTwo/$preAssemblySeq[5]-$currentAssemblySeq[5].tbl";
+						while(<TBL>)
+						{
+							chop;
+							/^#/ and next;
+							my @getAlignmentTwo = split("\t",$_);
 
-						unless(exists $twoSeqDirection->{$preAssemblySeq[5]}->{$currentAssemblySeq[5]})
-						{
-							$twoSeqDirection->{$preAssemblySeq[5]}->{$currentAssemblySeq[5]} = ($getAlignmentTwo[8] < $getAlignmentTwo[9]) ? 1 : -1;
+							unless(exists $twoSeqDirection->{$preAssemblySeq[5]}->{$currentAssemblySeq[5]})
+							{
+								$twoSeqDirection->{$preAssemblySeq[5]}->{$currentAssemblySeq[5]} = ($getAlignmentTwo[8] < $getAlignmentTwo[9]) ? 1 : -1;
+							}
+							if($getAlignmentTwo[6] == 1)
+							{
+								$orientation->{$preAssemblySeqId} = -1;
+								last;
+							}
+							if($getAlignmentTwo[7] == $preAssemblySeq[6])
+							{
+								$orientation->{$preAssemblySeqId} = 1;
+								last;
+							}
 						}
-						if($getAlignmentTwo[6] == 1)
-						{
-							$orientation->{$preAssemblySeqId} = -1;
-							last;
-						}
-						if($getAlignmentTwo[7] == $preAssemblySeq[6])
-						{
-							$orientation->{$preAssemblySeqId} = 1;
-							last;
-						}
+						close(TBL);
 					}
-					close(TBL);
 					if ($firstAssemblySeqFlag)
 					{
 						my $updatePreAssemblySeq=$dbh->do("UPDATE matrix SET barcode = $orientation->{$preAssemblySeqId} WHERE id = $preAssemblySeqId");
@@ -1212,7 +1227,6 @@ END
 							}
 							last if($mergeFlag);
 
-
 							my $queryDirAHBT;
 							for (my $position = 0; $position < length($headCtgSeqA[5]); $position += 2)
 							{
@@ -1473,145 +1487,29 @@ END
 					{
 						$subjectDir .= "/s". substr($nextAssemblySeq[5],$position,2);
 					}
-					my @getAlignment;
-					my $alignmentCount = 0;
-					open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preAssemblySeq[5]-$nextAssemblySeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preAssemblySeq[5]-$nextAssemblySeq[5].tbl";
-					while(<TBL>)
+					
+					if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preAssemblySeq[5]-$nextAssemblySeq[5].tbl")
 					{
-						chop;
-						/^#/ and next;
-						$alignmentCount++;
-						@getAlignment = split("\t",$_);
-						last if ($alignmentCount > 0);
-					}
-					close(TBL);
+						my @getAlignment;
+						my $alignmentCount = 0;
+						open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preAssemblySeq[5]-$nextAssemblySeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preAssemblySeq[5]-$nextAssemblySeq[5].tbl";
+						while(<TBL>)
+						{
+							chop;
+							/^#/ and next;
+							$alignmentCount++;
+							@getAlignment = split("\t",$_);
+							last if ($alignmentCount > 0);
+						}
+						close(TBL);
 
-					my $preSeqStartCandidate = $preSeqStart;
-					my $preSeqEndCandidate = $preSeqEnd;
-					my $nextSeqStartCandidate = $nextSeqStart;
-					my $nextSeqEndCandidate = $nextSeqEnd;
+						my $preSeqStartCandidate = $preSeqStart;
+						my $preSeqEndCandidate = $preSeqEnd;
+						my $nextSeqStartCandidate = $nextSeqStart;
+						my $nextSeqEndCandidate = $nextSeqEnd;
 
-					if($preSequence[3] < 4) #if preSeq has non-gapped sequence
-					{
-						#keep preSeq sequence
-						if($preAssemblySeq[7] > 0)
+						if($preSequence[3] < 4) #if preSeq has non-gapped sequence
 						{
-							if ($getAlignment[8] < $getAlignment[9])
-							{
-								$preSeqEndCandidate = $getAlignment[7];
-								$nextSeqStartCandidate = $getAlignment[9] + 1;
-							}
-							else
-							{
-								$preSeqEndCandidate = $getAlignment[7];
-								$nextSeqEndCandidate = $getAlignment[9] - 1;
-							}
-						}
-						else
-						{
-							if ($getAlignment[8] < $getAlignment[9])
-							{
-								$preSeqStartCandidate = $getAlignment[6];
-								$nextSeqEndCandidate = $getAlignment[8] - 1;
-							}
-							else
-							{
-								$preSeqStartCandidate = $getAlignment[6];
-								$nextSeqStartCandidate = $getAlignment[8] + 1;
-							}
-						}
-
-						if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $preAssemblySeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $nextAssemblySeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
-						{
-							my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $preAssemblySeq[0]");
-							my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $nextAssemblySeq[0]");
-						}
-						else
-						{
-							#keep nextSeq sequence
-							$preSeqStartCandidate = $preSeqStart;
-							$preSeqEndCandidate = $preSeqEnd;
-							$nextSeqStartCandidate = $nextSeqStart;
-							$nextSeqEndCandidate = $nextSeqEnd;
-							if($preAssemblySeq[7] > 0)
-							{
-								if ($getAlignment[8] < $getAlignment[9])
-								{
-									$preSeqEndCandidate = $getAlignment[6] - 1;
-									$nextSeqStartCandidate = $getAlignment[8];
-								}
-								else
-								{
-									$preSeqEndCandidate = $getAlignment[6] - 1;
-									$nextSeqEndCandidate = $getAlignment[8];
-								}
-							}
-							else
-							{
-								if ($getAlignment[8] < $getAlignment[9])
-								{
-									$preSeqStartCandidate = $getAlignment[7] + 1;
-									$nextSeqEndCandidate = $getAlignment[9];
-								}
-								else
-								{
-									$preSeqStartCandidate = $getAlignment[7] + 1;
-									$nextSeqStartCandidate = $getAlignment[9];
-								}
-							}
-
-							if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $preAssemblySeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $nextAssemblySeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
-							{
-								my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $preAssemblySeq[0]");
-								my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $nextAssemblySeq[0]");
-							}
-							else
-							{
-								#do nothing if conflicts found
-							}
-						}
-					}
-					else
-					{
-						#keep nextSeq sequence
-						if($preAssemblySeq[7] > 0)
-						{
-							if ($getAlignment[8] < $getAlignment[9])
-							{
-								$preSeqEndCandidate = $getAlignment[6] - 1;
-								$nextSeqStartCandidate = $getAlignment[8];
-							}
-							else
-							{
-								$preSeqEndCandidate = $getAlignment[6] - 1;
-								$nextSeqEndCandidate = $getAlignment[8];
-							}
-						}
-						else
-						{
-							if ($getAlignment[8] < $getAlignment[9])
-							{
-								$preSeqStartCandidate = $getAlignment[7] + 1;
-								$nextSeqEndCandidate = $getAlignment[9];
-							}
-							else
-							{
-								$preSeqStartCandidate = $getAlignment[7] + 1;
-								$nextSeqStartCandidate = $getAlignment[9];
-							}
-						}
-
-						if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $preAssemblySeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $nextAssemblySeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
-						{
-							my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $preAssemblySeq[0]");
-							my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $nextAssemblySeq[0]");
-						}
-						else
-						{
-							$preSeqStartCandidate = $preSeqStart;
-							$preSeqEndCandidate = $preSeqEnd;
-							$nextSeqStartCandidate = $nextSeqStart;
-							$nextSeqEndCandidate = $nextSeqEnd;
 							#keep preSeq sequence
 							if($preAssemblySeq[7] > 0)
 							{
@@ -1647,7 +1545,127 @@ END
 							}
 							else
 							{
-								#do nothing if conflicts found
+								#keep nextSeq sequence
+								$preSeqStartCandidate = $preSeqStart;
+								$preSeqEndCandidate = $preSeqEnd;
+								$nextSeqStartCandidate = $nextSeqStart;
+								$nextSeqEndCandidate = $nextSeqEnd;
+								if($preAssemblySeq[7] > 0)
+								{
+									if ($getAlignment[8] < $getAlignment[9])
+									{
+										$preSeqEndCandidate = $getAlignment[6] - 1;
+										$nextSeqStartCandidate = $getAlignment[8];
+									}
+									else
+									{
+										$preSeqEndCandidate = $getAlignment[6] - 1;
+										$nextSeqEndCandidate = $getAlignment[8];
+									}
+								}
+								else
+								{
+									if ($getAlignment[8] < $getAlignment[9])
+									{
+										$preSeqStartCandidate = $getAlignment[7] + 1;
+										$nextSeqEndCandidate = $getAlignment[9];
+									}
+									else
+									{
+										$preSeqStartCandidate = $getAlignment[7] + 1;
+										$nextSeqStartCandidate = $getAlignment[9];
+									}
+								}
+
+								if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $preAssemblySeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $nextAssemblySeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
+								{
+									my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $preAssemblySeq[0]");
+									my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $nextAssemblySeq[0]");
+								}
+								else
+								{
+									#do nothing if conflicts found
+								}
+							}
+						}
+						else
+						{
+							#keep nextSeq sequence
+							if($preAssemblySeq[7] > 0)
+							{
+								if ($getAlignment[8] < $getAlignment[9])
+								{
+									$preSeqEndCandidate = $getAlignment[6] - 1;
+									$nextSeqStartCandidate = $getAlignment[8];
+								}
+								else
+								{
+									$preSeqEndCandidate = $getAlignment[6] - 1;
+									$nextSeqEndCandidate = $getAlignment[8];
+								}
+							}
+							else
+							{
+								if ($getAlignment[8] < $getAlignment[9])
+								{
+									$preSeqStartCandidate = $getAlignment[7] + 1;
+									$nextSeqEndCandidate = $getAlignment[9];
+								}
+								else
+								{
+									$preSeqStartCandidate = $getAlignment[7] + 1;
+									$nextSeqStartCandidate = $getAlignment[9];
+								}
+							}
+
+							if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $preAssemblySeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $nextAssemblySeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
+							{
+								my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $preAssemblySeq[0]");
+								my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $nextAssemblySeq[0]");
+							}
+							else
+							{
+								$preSeqStartCandidate = $preSeqStart;
+								$preSeqEndCandidate = $preSeqEnd;
+								$nextSeqStartCandidate = $nextSeqStart;
+								$nextSeqEndCandidate = $nextSeqEnd;
+								#keep preSeq sequence
+								if($preAssemblySeq[7] > 0)
+								{
+									if ($getAlignment[8] < $getAlignment[9])
+									{
+										$preSeqEndCandidate = $getAlignment[7];
+										$nextSeqStartCandidate = $getAlignment[9] + 1;
+									}
+									else
+									{
+										$preSeqEndCandidate = $getAlignment[7];
+										$nextSeqEndCandidate = $getAlignment[9] - 1;
+									}
+								}
+								else
+								{
+									if ($getAlignment[8] < $getAlignment[9])
+									{
+										$preSeqStartCandidate = $getAlignment[6];
+										$nextSeqEndCandidate = $getAlignment[8] - 1;
+									}
+									else
+									{
+										$preSeqStartCandidate = $getAlignment[6];
+										$nextSeqStartCandidate = $getAlignment[8] + 1;
+									}
+								}
+
+								if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $preAssemblySeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $nextAssemblySeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
+								{
+									my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $preAssemblySeq[0]");
+									my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $nextAssemblySeq[0]");
+								}
+								else
+								{
+									#do nothing if conflicts found
+								}
 							}
 						}
 					}

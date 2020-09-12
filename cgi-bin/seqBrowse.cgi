@@ -176,82 +176,85 @@ if ($seqId)
 			if(/(\d+)-(\d+).tbl$/)
 			{
 				next if ($2 != $refSequence[0]);
-				open (TBL, "$commoncfg->{DATADIR}/$_") or die "can't open file: $commoncfg->{DATADIR}/$_";
-				while(<TBL>)
+				if(-e "$commoncfg->{DATADIR}/$_")
 				{
-					chop;
-					/^#/ and next;
-					my @besList = split("\t",$_);
-					next if ($besList[12] > 0);
-					next if ($besList[2] < 95);
-
-					$besId++;
-					my $besSequence = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-					$besSequence->execute($besList[0]);
-					my @besSequence = $besSequence->fetchrow_array();
-					my $besBarX = ($besList[9] > $besList[8]) ? $margin + $besList[8] / $pixelUnit : $margin + $besList[9] / $pixelUnit;
-					my $besBarY = $barY + $barHeight*1.5;
-					$besSeq->rectangle(
-						id    => $besList[0].$besId,
-						x     => $besBarX,
-						y     => $besBarY,
-						width => ($besList[9] > $besList[8]) ? ($besList[9] - $besList[8]) / $pixelUnit : ($besList[8] - $besList[9]) / $pixelUnit,
-						height=> $barHeight,
-						style => { stroke => ($besList[9] > $besList[8]) ? 'black' : 'red',
-									fill => 'blue',
-									'fill-opacity' => 0.3
-								}
-					);
-
-					$fpcContig->{$besSequence[2]} = "None" unless (exists $fpcContig->{$besSequence[2]});
-					$fpcCloneLeftEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneLeftEnd->{$besSequence[2]});
-					$fpcCloneRightEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneRightEnd->{$besSequence[2]});
-
-					my $getFpcClone = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'fpcClone' AND name LIKE ?");
-					$getFpcClone->execute($besSequence[2]);
-					while (my @getFpcClone = $getFpcClone->fetchrow_array())
+					open (TBL, "$commoncfg->{DATADIR}/$_") or die "can't open file: $commoncfg->{DATADIR}/$_";
+					while(<TBL>)
 					{
-						$fpcContig->{$besSequence[2]} = 'Ctg0';
-						$fpcCloneLeftEnd->{$besSequence[2]} = 0;
-						$fpcCloneRightEnd->{$besSequence[2]} = 0;
-						if ($getFpcClone[8] =~ /Map "(.*)" Ends Left (\d*)/)
-						{
-							$fpcContig->{$besSequence[2]} = ucfirst ($1);
-							$fpcCloneLeftEnd->{$besSequence[2]} = $2;
-						}
-						if ($getFpcClone[8] =~ /Ends Right (\d*)/)
-						{
-							$fpcCloneRightEnd->{$besSequence[2]} = $1;
-						}
-					}
+						chop;
+						/^#/ and next;
+						my @besList = split("\t",$_);
+						next if ($besList[12] > 0);
+						next if ($besList[2] < 95);
 
-					if (exists $besLeftPosition->{$besSequence[2]})
-					{
-						my $besDistance = $besList[8] - $besLeftPosition->{$besSequence[2]};
-						next if($besDistance > 300000 || $besDistance < 25000);
-						next if($besLeftDirection->{$besSequence[2]} == $besSequence[6]);
-						push @lengthList,$besDistance;
-						$besRightDirection->{$besSequence[2]} = $besSequence[6];
-						$besRightPosition->{$besSequence[2]} = ($besList[9] > $besList[8]) ? $besList[9] : $besList[8];
-						$besRightAlignment->{$besSequence[2]} = ($besList[9] > $besList[8]) ? "+" : "-";
-						$totalLength += $besDistance;
-						if($besLeftAlignment->{$besSequence[2]} eq $besRightAlignment->{$besSequence[2]})
+						$besId++;
+						my $besSequence = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+						$besSequence->execute($besList[0]);
+						my @besSequence = $besSequence->fetchrow_array();
+						my $besBarX = ($besList[9] > $besList[8]) ? $margin + $besList[8] / $pixelUnit : $margin + $besList[9] / $pixelUnit;
+						my $besBarY = $barY + $barHeight*1.5;
+						$besSeq->rectangle(
+							id    => $besList[0].$besId,
+							x     => $besBarX,
+							y     => $besBarY,
+							width => ($besList[9] > $besList[8]) ? ($besList[9] - $besList[8]) / $pixelUnit : ($besList[8] - $besList[9]) / $pixelUnit,
+							height=> $barHeight,
+							style => { stroke => ($besList[9] > $besList[8]) ? 'black' : 'red',
+										fill => 'blue',
+										'fill-opacity' => 0.3
+									}
+						);
+
+						$fpcContig->{$besSequence[2]} = "None" unless (exists $fpcContig->{$besSequence[2]});
+						$fpcCloneLeftEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneLeftEnd->{$besSequence[2]});
+						$fpcCloneRightEnd->{$besSequence[2]} = -1 unless (exists $fpcCloneRightEnd->{$besSequence[2]});
+
+						my $getFpcClone = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'fpcClone' AND name LIKE ?");
+						$getFpcClone->execute($besSequence[2]);
+						while (my @getFpcClone = $getFpcClone->fetchrow_array())
 						{
-							print BES "$besSequence[2]\t$refSequence[2]\t$besLeftPosition->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$besSequence[2]}\t=\t$fpcContig->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}\n";
+							$fpcContig->{$besSequence[2]} = 'Ctg0';
+							$fpcCloneLeftEnd->{$besSequence[2]} = 0;
+							$fpcCloneRightEnd->{$besSequence[2]} = 0;
+							if ($getFpcClone[8] =~ /Map "(.*)" Ends Left (\d*)/)
+							{
+								$fpcContig->{$besSequence[2]} = ucfirst ($1);
+								$fpcCloneLeftEnd->{$besSequence[2]} = $2;
+							}
+							if ($getFpcClone[8] =~ /Ends Right (\d*)/)
+							{
+								$fpcCloneRightEnd->{$besSequence[2]} = $1;
+							}
+						}
+
+						if (exists $besLeftPosition->{$besSequence[2]})
+						{
+							my $besDistance = $besList[8] - $besLeftPosition->{$besSequence[2]};
+							next if($besDistance > 300000 || $besDistance < 25000);
+							next if($besLeftDirection->{$besSequence[2]} == $besSequence[6]);
+							push @lengthList,$besDistance;
+							$besRightDirection->{$besSequence[2]} = $besSequence[6];
+							$besRightPosition->{$besSequence[2]} = ($besList[9] > $besList[8]) ? $besList[9] : $besList[8];
+							$besRightAlignment->{$besSequence[2]} = ($besList[9] > $besList[8]) ? "+" : "-";
+							$totalLength += $besDistance;
+							if($besLeftAlignment->{$besSequence[2]} eq $besRightAlignment->{$besSequence[2]})
+							{
+								print BES "$besSequence[2]\t$refSequence[2]\t$besLeftPosition->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$besSequence[2]}\t=\t$fpcContig->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}\n";
+							}
+							else
+							{
+								print BES "$besSequence[2]\t$refSequence[2]\t$besLeftPosition->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$besSequence[2]}\t$besRightAlignment->{$besSequence[2]}\t$fpcContig->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}\n";
+							}
 						}
 						else
 						{
-							print BES "$besSequence[2]\t$refSequence[2]\t$besLeftPosition->{$besSequence[2]}\t$besDistance\t$seqDir{$besLeftDirection->{$besSequence[2]}}\t$seqDir{$besSequence[6]}\t$besLeftAlignment->{$besSequence[2]}\t$besRightAlignment->{$besSequence[2]}\t$fpcContig->{$besSequence[2]}\t$fpcCloneLeftEnd->{$besSequence[2]}\t$fpcCloneRightEnd->{$besSequence[2]}\n";
+							$besLeftPosition->{$besSequence[2]} = ($besList[9] > $besList[8]) ? $besList[8] : $besList[9];
+							$besLeftDirection->{$besSequence[2]} = $besSequence[6];
+							$besLeftAlignment->{$besSequence[2]} = ($besList[9] > $besList[8]) ? "+" : "-";
 						}
 					}
-					else
-					{
-						$besLeftPosition->{$besSequence[2]} = ($besList[9] > $besList[8]) ? $besList[8] : $besList[9];
-						$besLeftDirection->{$besSequence[2]} = $besSequence[6];
-						$besLeftAlignment->{$besSequence[2]} = ($besList[9] > $besList[8]) ? "+" : "-";
-					}
+					close(TBL);			
 				}
-				close(TBL);			
 			}
 		}
 	}

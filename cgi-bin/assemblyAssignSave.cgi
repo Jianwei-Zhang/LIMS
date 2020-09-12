@@ -74,28 +74,31 @@ END
 					{
 						$subjectDir .= "/s". substr($genomeSeq[0],$position,2);
 					}
-					open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySeq[5]-$genomeSeq[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySeq[5]-$genomeSeq[0].tbl";
-					while(<TBL>)
+					if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySeq[5]-$genomeSeq[0].tbl")
 					{
-						chop;
-						/^#/ and next;
-						my @getAlignment = split("\t",$_);
-						if ($assemblySeq[7] > 0)
+						open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySeq[5]-$genomeSeq[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySeq[5]-$genomeSeq[0].tbl";
+						while(<TBL>)
 						{
-							my $pos1=$getAlignment[8] < $getAlignment[9] ? $getAlignment[8] : $getAlignment[9];
-							my $pos2=$getAlignment[6] < $getAlignment[7] ? $getAlignment[6] : $getAlignment[7];
-							$position=$pos1-$pos2 if ($maxAlign < $getAlignment[3]);
-							$maxAlign=$maxAlign > $getAlignment[3] ? $maxAlign :$getAlignment[3];
+							chop;
+							/^#/ and next;
+							my @getAlignment = split("\t",$_);
+							if ($assemblySeq[7] > 0)
+							{
+								my $pos1=$getAlignment[8] < $getAlignment[9] ? $getAlignment[8] : $getAlignment[9];
+								my $pos2=$getAlignment[6] < $getAlignment[7] ? $getAlignment[6] : $getAlignment[7];
+								$position=$pos1-$pos2 if ($maxAlign < $getAlignment[3]);
+								$maxAlign=$maxAlign > $getAlignment[3] ? $maxAlign :$getAlignment[3];
+							}
+							else
+							{
+								my $pos1=$getAlignment[8] < $getAlignment[9] ? $getAlignment[8] : $getAlignment[9];
+								my $pos2=$getAlignment[6] > $getAlignment[7] ? $getAlignment[6] : $getAlignment[7];
+								$position=$pos1-$assemblySeq[6]+$pos2 if ($maxAlign < $getAlignment[3]);
+								$maxAlign=$maxAlign > $getAlignment[3] ? $maxAlign :$getAlignment[3];
+							}
 						}
-						else
-						{
-							my $pos1=$getAlignment[8] < $getAlignment[9] ? $getAlignment[8] : $getAlignment[9];
-							my $pos2=$getAlignment[6] > $getAlignment[7] ? $getAlignment[6] : $getAlignment[7];
-							$position=$pos1-$assemblySeq[6]+$pos2 if ($maxAlign < $getAlignment[3]);
-							$maxAlign=$maxAlign > $getAlignment[3] ? $maxAlign :$getAlignment[3];
-						}
+						close(TBL);
 					}
-					close(TBL);
 				}
 			}
 			my $update=$dbh->do("UPDATE matrix SET x = $chrNumber,z = $position WHERE id = $assemblyCtgId ");

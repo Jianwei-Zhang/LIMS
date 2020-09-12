@@ -116,9 +116,6 @@ END
 				$nextSeqStart = 1;
 				$nextSeqEnd = $assemblyNextSeq[6];
 			}
-			my $nextSequence = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-			$nextSequence->execute($getAlignment[1]);
-			my @nextSequence = $nextSequence->fetchrow_array();
 
 			my $preSeqStartCandidate = $preSeqStart;
 			my $preSeqEndCandidate = $preSeqEnd;
@@ -336,9 +333,6 @@ END
 					$nextSeqStart = 1;
 					$nextSeqEnd = $assemblyNextSeq[6];
 				}
-				my $nextSequence = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-				$nextSequence->execute($assemblyNextSeq[5]);
-				my @nextSequence = $nextSequence->fetchrow_array();
 
 				my $queryDir;
 				for (my $position = 0; $position < length($assemblyPreSeq[5]); $position += 2)
@@ -350,150 +344,28 @@ END
 				{
 					$subjectDir .= "/s". substr($assemblyNextSeq[5],$position,2);
 				}
-				my @getAlignment;
-				my $alignmentCount = 0;
-				open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblyPreSeq[5]-$assemblyNextSeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblyPreSeq[5]-$assemblyNextSeq[5].tbl";
-				while(<TBL>)
+				if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblyPreSeq[5]-$assemblyNextSeq[5].tbl")
 				{
-					chop;
-					/^#/ and next;
-					$alignmentCount++;
-					@getAlignment = split("\t",$_);
-					last if ($alignmentCount == 1);
-				}
-				close(TBL);
+					my @getAlignment;
+					my $alignmentCount = 0;
+					open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblyPreSeq[5]-$assemblyNextSeq[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblyPreSeq[5]-$assemblyNextSeq[5].tbl";
+					while(<TBL>)
+					{
+						chop;
+						/^#/ and next;
+						$alignmentCount++;
+						@getAlignment = split("\t",$_);
+						last if ($alignmentCount == 1);
+					}
+					close(TBL);
 
-				my $preSeqStartCandidate = $preSeqStart;
-				my $preSeqEndCandidate = $preSeqEnd;
-				my $nextSeqStartCandidate = $nextSeqStart;
-				my $nextSeqEndCandidate = $nextSeqEnd;
+					my $preSeqStartCandidate = $preSeqStart;
+					my $preSeqEndCandidate = $preSeqEnd;
+					my $nextSeqStartCandidate = $nextSeqStart;
+					my $nextSeqEndCandidate = $nextSeqEnd;
 
-				if($preSequence[3] < 4) #if preSeq has non-gapped sequence
-				{
-					#keep preSeq sequence
-					if($assemblyPreSeq[7] > 0)
+					if($preSequence[3] < 4) #if preSeq has non-gapped sequence
 					{
-						if ($getAlignment[8] < $getAlignment[9])
-						{
-							$preSeqEndCandidate = $getAlignment[7];
-							$nextSeqStartCandidate = $getAlignment[9] + 1;
-						}
-						else
-						{
-							$preSeqEndCandidate = $getAlignment[7];
-							$nextSeqEndCandidate = $getAlignment[9] - 1;
-						}
-					}
-					else
-					{
-						if ($getAlignment[8] < $getAlignment[9])
-						{
-							$preSeqStartCandidate = $getAlignment[6];
-							$nextSeqEndCandidate = $getAlignment[8] - 1;
-						}
-						else
-						{
-							$preSeqStartCandidate = $getAlignment[6];
-							$nextSeqStartCandidate = $getAlignment[8] + 1;
-						}
-					}
-
-					if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $assemblyPreSeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $assemblyNextSeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
-					{
-						my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $assemblyPreSeq[0]");
-						my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $assemblyNextSeq[0]");
-					}
-					else
-					{
-						#keep nextSeq sequence
-						$preSeqStartCandidate = $preSeqStart;
-						$preSeqEndCandidate = $preSeqEnd;
-						$nextSeqStartCandidate = $nextSeqStart;
-						$nextSeqEndCandidate = $nextSeqEnd;
-						if($assemblyPreSeq[7] > 0)
-						{
-							if ($getAlignment[8] < $getAlignment[9])
-							{
-								$preSeqEndCandidate = $getAlignment[6] - 1;
-								$nextSeqStartCandidate = $getAlignment[8];
-							}
-							else
-							{
-								$preSeqEndCandidate = $getAlignment[6] - 1;
-								$nextSeqEndCandidate = $getAlignment[8];
-							}
-						}
-						else
-						{
-							if ($getAlignment[8] < $getAlignment[9])
-							{
-								$preSeqStartCandidate = $getAlignment[7] + 1;
-								$nextSeqEndCandidate = $getAlignment[9];
-							}
-							else
-							{
-								$preSeqStartCandidate = $getAlignment[7] + 1;
-								$nextSeqStartCandidate = $getAlignment[9];
-							}
-						}
-
-						if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $assemblyPreSeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $assemblyNextSeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
-						{
-							my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $assemblyPreSeq[0]");
-							my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $assemblyNextSeq[0]");
-						}
-						else
-						{
-							print <<END;
-	<script>
-		errorPop("A conflict region found, filtering action cancelled!");
-	</script>
-END
-							exit;
-						}
-					}
-				}
-				else
-				{
-					#keep nextSeq sequence
-					if($assemblyPreSeq[7] > 0)
-					{
-						if ($getAlignment[8] < $getAlignment[9])
-						{
-							$preSeqEndCandidate = $getAlignment[6] - 1;
-							$nextSeqStartCandidate = $getAlignment[8];
-						}
-						else
-						{
-							$preSeqEndCandidate = $getAlignment[6] - 1;
-							$nextSeqEndCandidate = $getAlignment[8];
-						}
-					}
-					else
-					{
-						if ($getAlignment[8] < $getAlignment[9])
-						{
-							$preSeqStartCandidate = $getAlignment[7] + 1;
-							$nextSeqEndCandidate = $getAlignment[9];
-						}
-						else
-						{
-							$preSeqStartCandidate = $getAlignment[7] + 1;
-							$nextSeqStartCandidate = $getAlignment[9];
-						}
-					}
-
-					if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $assemblyPreSeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $assemblyNextSeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
-					{
-						my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $assemblyPreSeq[0]");
-						my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $assemblyNextSeq[0]");
-					}
-					else
-					{
-						$preSeqStartCandidate = $preSeqStart;
-						$preSeqEndCandidate = $preSeqEnd;
-						$nextSeqStartCandidate = $nextSeqStart;
-						$nextSeqEndCandidate = $nextSeqEnd;
 						#keep preSeq sequence
 						if($assemblyPreSeq[7] > 0)
 						{
@@ -529,12 +401,137 @@ END
 						}
 						else
 						{
-							print <<END;
+							#keep nextSeq sequence
+							$preSeqStartCandidate = $preSeqStart;
+							$preSeqEndCandidate = $preSeqEnd;
+							$nextSeqStartCandidate = $nextSeqStart;
+							$nextSeqEndCandidate = $nextSeqEnd;
+							if($assemblyPreSeq[7] > 0)
+							{
+								if ($getAlignment[8] < $getAlignment[9])
+								{
+									$preSeqEndCandidate = $getAlignment[6] - 1;
+									$nextSeqStartCandidate = $getAlignment[8];
+								}
+								else
+								{
+									$preSeqEndCandidate = $getAlignment[6] - 1;
+									$nextSeqEndCandidate = $getAlignment[8];
+								}
+							}
+							else
+							{
+								if ($getAlignment[8] < $getAlignment[9])
+								{
+									$preSeqStartCandidate = $getAlignment[7] + 1;
+									$nextSeqEndCandidate = $getAlignment[9];
+								}
+								else
+								{
+									$preSeqStartCandidate = $getAlignment[7] + 1;
+									$nextSeqStartCandidate = $getAlignment[9];
+								}
+							}
+
+							if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $assemblyPreSeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $assemblyNextSeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
+							{
+								my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $assemblyPreSeq[0]");
+								my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $assemblyNextSeq[0]");
+							}
+							else
+							{
+								print <<END;
 	<script>
 		errorPop("A conflict region found, filtering action cancelled!");
 	</script>
 END
-							exit;
+								exit;
+							}
+						}
+					}
+					else
+					{
+						#keep nextSeq sequence
+						if($assemblyPreSeq[7] > 0)
+						{
+							if ($getAlignment[8] < $getAlignment[9])
+							{
+								$preSeqEndCandidate = $getAlignment[6] - 1;
+								$nextSeqStartCandidate = $getAlignment[8];
+							}
+							else
+							{
+								$preSeqEndCandidate = $getAlignment[6] - 1;
+								$nextSeqEndCandidate = $getAlignment[8];
+							}
+						}
+						else
+						{
+							if ($getAlignment[8] < $getAlignment[9])
+							{
+								$preSeqStartCandidate = $getAlignment[7] + 1;
+								$nextSeqEndCandidate = $getAlignment[9];
+							}
+							else
+							{
+								$preSeqStartCandidate = $getAlignment[7] + 1;
+								$nextSeqStartCandidate = $getAlignment[9];
+							}
+						}
+
+						if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $assemblyPreSeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $assemblyNextSeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
+						{
+							my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $assemblyPreSeq[0]");
+							my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $assemblyNextSeq[0]");
+						}
+						else
+						{
+							$preSeqStartCandidate = $preSeqStart;
+							$preSeqEndCandidate = $preSeqEnd;
+							$nextSeqStartCandidate = $nextSeqStart;
+							$nextSeqEndCandidate = $nextSeqEnd;
+							#keep preSeq sequence
+							if($assemblyPreSeq[7] > 0)
+							{
+								if ($getAlignment[8] < $getAlignment[9])
+								{
+									$preSeqEndCandidate = $getAlignment[7];
+									$nextSeqStartCandidate = $getAlignment[9] + 1;
+								}
+								else
+								{
+									$preSeqEndCandidate = $getAlignment[7];
+									$nextSeqEndCandidate = $getAlignment[9] - 1;
+								}
+							}
+							else
+							{
+								if ($getAlignment[8] < $getAlignment[9])
+								{
+									$preSeqStartCandidate = $getAlignment[6];
+									$nextSeqEndCandidate = $getAlignment[8] - 1;
+								}
+								else
+								{
+									$preSeqStartCandidate = $getAlignment[6];
+									$nextSeqStartCandidate = $getAlignment[8] + 1;
+								}
+							}
+
+							if ($preSeqStartCandidate >= 1 && $preSeqEndCandidate <= $assemblyPreSeq[6] && $nextSeqStartCandidate >= 1 && $nextSeqEndCandidate <= $assemblyNextSeq[6] && $preSeqStartCandidate <= $preSeqEndCandidate && $nextSeqStartCandidate <= $nextSeqEndCandidate)
+							{
+								my $updateAssemblySeqPre=$dbh->do("UPDATE matrix SET note = '$preSeqStartCandidate,$preSeqEndCandidate' WHERE id = $assemblyPreSeq[0]");
+								my $updateAssemblySeqNext=$dbh->do("UPDATE matrix SET note = '$nextSeqStartCandidate,$nextSeqEndCandidate' WHERE id = $assemblyNextSeq[0]");
+							}
+							else
+							{
+								print <<END;
+	<script>
+		errorPop("A conflict region found, filtering action cancelled!");
+	</script>
+END
+								exit;
+							}
 						}
 					}
 				}
