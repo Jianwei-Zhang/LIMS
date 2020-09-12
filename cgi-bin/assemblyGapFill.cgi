@@ -145,31 +145,75 @@ END
 					$matchedSeqOneByTag->{$getTagsOneMatched[2]}++;
 				}
 			}
-			my $matchedSeqOneByBes;
 
-
-
-
-
-
-			my $getBesOne = $dbh->prepare("SELECT * FROM matrix,alignment WHERE matrix.container LIKE 'sequence' AND matrix.o = 98 AND matrix.x = ? AND matrix.id = alignment.query AND alignment.subject = ?");
-			$getBesOne->execute($assembly[4],$assemblySeqOne[5]);
-			while(my @getBesOne = $getBesOne->fetchrow_array())
+			my $queryIdOnSeqOne;
+			my $queryDirOne;
+			for (my $position = 0; $position < length($assemblySeqOne[5]); $position += 2)
 			{
-				$matchedSeqOne->{$getBesOne[2]} = 1;
-				$matchedSeqOneByBes->{$getBesOne[2]} = "$seqDir{$getBesOne[6]}-end";
+				$queryDirOne .= "/q". substr($assemblySeqOne[5],$position,2);
+			}
+			if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirOne")
+			{
+				my @dirs;
+				push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirOne";
+
+				do{
+					my $dir = shift @dirs;
+					opendir(DIR, $dir) or die "can't opendir $dir: $!";
+					my @files = readdir(DIR);
+					closedir DIR;
+					foreach my $file (sort @files)
+					{
+						next if ($file =~ /^\./);
+						if(-f "$dir/$file")
+						{
+							if ($file =~ /(\d+)-(\d+).tbl$/)
+							{
+								my $subjectId = $2;
+								open (TBL, "$dir/$file") or die "can't open file: $dir/$file";
+								while(<TBL>)
+								{
+									chop;
+									/^#/ and next;
+									my @hit = split("\t",$_);
+									next if ($hit[12] > 0);
+									$queryIdOnSeqOne->{$subjectId} = $hit[3] if (!exists $queryIdOnSeqOne->{$subjectId});
+									$queryIdOnSeqOne->{$subjectId} = $hit[3] if ($queryIdOnSeqOne->{$subjectId} < $hit[3]);
+								}
+								close(TBL);
+							}
+						}
+						elsif(-d "$dir/$file")
+						{
+							unshift @dirs, "$dir/$file";
+						}
+					}
+				}while (@dirs);
 			}
 
-
+			my $matchedSeqOneByBes;
+			my $getBesOne = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 98 AND x = ?");
+			$getBesOne->execute($assembly[4]);
+			while(my @getBesOne = $getBesOne->fetchrow_array())
+			{
+				if(exists $queryIdOnSeqOne->{$getBesOne[0]})
+				{
+					$matchedSeqOne->{$getBesOne[2]} = 1;
+					$matchedSeqOneByBes->{$getBesOne[2]} = "$seqDir{$getBesOne[6]}-end";
+				}
+			}
 
 			my $matchedSeqOneByGenome;
-			my $getGenomeOne = $dbh->prepare("SELECT * FROM matrix,alignment WHERE matrix.container LIKE 'sequence' AND matrix.o = 99 AND matrix.x = ? AND matrix.id = alignment.query AND alignment.subject = ?");
-			$getGenomeOne->execute($assembly[4],$assemblySeqOne[5]);
+			my $getGenomeOne = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 99 AND x = ?");
+			$getGenomeOne->execute($assembly[4]);
 			while(my @getGenomeOne = $getGenomeOne->fetchrow_array())
 			{
-				$matchedSeqOne->{$getGenomeOne[2]} = 1;
-				$matchedSeqOneByGenome->{$getGenomeOne[2]} = 0 if (!exists $matchedSeqOneByGenome->{$getGenomeOne[2]});
-				$matchedSeqOneByGenome->{$getGenomeOne[2]} = $getGenomeOne[16] if($matchedSeqOneByGenome->{$getGenomeOne[2]} < $getGenomeOne[16]);
+				if(exists $queryIdOnSeqOne->{$getGenomeOne[0]})
+				{
+					$matchedSeqOne->{$getGenomeOne[2]} = 1;
+					$matchedSeqOneByGenome->{$getGenomeOne[2]} = 0 if (!exists $matchedSeqOneByGenome->{$getGenomeOne[2]});
+					$matchedSeqOneByGenome->{$getGenomeOne[2]} = $queryIdOnSeqOne->{$getGenomeOne[0]} if($matchedSeqOneByGenome->{$getGenomeOne[2]} < $queryIdOnSeqOne->{$getGenomeOne[0]});
+				}
 			}
 
 			my $assemblyCtgTwo=$dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'assemblyCtg' AND o = ? AND name LIKE ?");
@@ -233,21 +277,73 @@ END
 					$matchedSeqTwoByTag->{$getTagsTwoMatched[2]}++;
 				}
 			}
+
+			my $queryIdOnSeqTwo;
+			my $queryDirTwo;
+			for (my $position = 0; $position < length($assemblySeqTwo[5]); $position += 2)
+			{
+				$queryDirTwo .= "/q". substr($assemblySeqTwo[5],$position,2);
+			}
+			if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo")
+			{
+				my @dirs;
+				push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo";
+
+				do{
+					my $dir = shift @dirs;
+					opendir(DIR, $dir) or die "can't opendir $dir: $!";
+					my @files = readdir(DIR);
+					closedir DIR;
+					foreach my $file (sort @files)
+					{
+						next if ($file =~ /^\./);
+						if(-f "$dir/$file")
+						{
+							if ($file =~ /(\d+)-(\d+).tbl$/)
+							{
+								my $subjectId = $2;
+								open (TBL, "$dir/$file") or die "can't open file: $dir/$file";
+								while(<TBL>)
+								{
+									chop;
+									/^#/ and next;
+									my @hit = split("\t",$_);
+									next if ($hit[12] > 0);
+									$queryIdOnSeqTwo->{$subjectId} = $hit[3] if (!exists $queryIdOnSeqTwo->{$subjectId});
+									$queryIdOnSeqTwo->{$subjectId} = $hit[3] if ($queryIdOnSeqTwo->{$subjectId} < $hit[3]);
+								}
+								close(TBL);
+							}
+						}
+						elsif(-d "$dir/$file")
+						{
+							unshift @dirs, "$dir/$file";
+						}
+					}
+				}while (@dirs);
+			}
+
 			my $matchedSeqTwoByBes;
-			my $getBesTwo = $dbh->prepare("SELECT * FROM matrix,alignment WHERE matrix.container LIKE 'sequence' AND matrix.o = 98 AND matrix.x = ? AND matrix.id = alignment.query AND alignment.subject = ?");
-			$getBesTwo->execute($assembly[4],$assemblySeqTwo[5]);
+			my $getBesTwo = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 98 AND x = ?");
+			$getBesTwo->execute($assembly[4]);
 			while(my @getBesTwo = $getBesTwo->fetchrow_array())
 			{
-				$matchedSeqTwoByBes->{$getBesTwo[2]} = "$seqDir{$getBesTwo[6]}-end";
+				if(exists $queryIdOnSeqTwo->{$getBesTwo[0]})
+				{
+					$matchedSeqTwoByBes->{$getBesTwo[2]} = "$seqDir{$getBesTwo[6]}-end";
+				}
 			}
 
 			my $matchedSeqTwoByGenome;
-			my $getGenomeTwo = $dbh->prepare("SELECT * FROM matrix,alignment WHERE matrix.container LIKE 'sequence' AND matrix.o = 99 AND matrix.x = ? AND matrix.id = alignment.query AND alignment.subject = ?");
-			$getGenomeTwo->execute($assembly[4],$assemblySeqTwo[5]);
+			my $getGenomeTwo = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 99 AND x = ?");
+			$getGenomeTwo->execute($assembly[4]);
 			while(my @getGenomeTwo = $getGenomeTwo->fetchrow_array())
 			{
-				$matchedSeqTwoByGenome->{$getGenomeTwo[2]} = 0 if (!exists $matchedSeqTwoByGenome->{$getGenomeTwo[2]});
-				$matchedSeqTwoByGenome->{$getGenomeTwo[2]} = $getGenomeTwo[16] if ($matchedSeqTwoByGenome->{$getGenomeTwo[2]} < $getGenomeTwo[16]);
+				if(exists $queryIdOnSeqTwo->{$getGenomeTwo[0]})
+				{
+					$matchedSeqTwoByGenome->{$getGenomeTwo[2]} = 0 if (!exists $matchedSeqTwoByGenome->{$getGenomeTwo[2]});
+					$matchedSeqTwoByGenome->{$getGenomeTwo[2]} = $queryIdOnSeqTwo->{$getGenomeTwo[0]} if ($matchedSeqTwoByGenome->{$getGenomeTwo[2]} < $queryIdOnSeqTwo->{$getGenomeTwo[0]});
+				}
 			}
 
 
@@ -472,23 +568,75 @@ END
 						$matchedSeqOneByTag->{$getTagsOneMatched[2]}++;
 					}
 				}
+
+				my $queryIdOnSeqOne;
+				my $queryDirOne;
+				for (my $position = 0; $position < length($assemblySeqOne[5]); $position += 2)
+				{
+					$queryDirOne .= "/q". substr($assemblySeqOne[5],$position,2);
+				}
+				if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirOne")
+				{
+					my @dirs;
+					push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirOne";
+
+					do{
+						my $dir = shift @dirs;
+						opendir(DIR, $dir) or die "can't opendir $dir: $!";
+						my @files = readdir(DIR);
+						closedir DIR;
+						foreach my $file (sort @files)
+						{
+							next if ($file =~ /^\./);
+							if(-f "$dir/$file")
+							{
+								if ($file =~ /(\d+)-(\d+).tbl$/)
+								{
+									my $subjectId = $2;
+									open (TBL, "$dir/$file") or die "can't open file: $dir/$file";
+									while(<TBL>)
+									{
+										chop;
+										/^#/ and next;
+										my @hit = split("\t",$_);
+										next if ($hit[12] > 0);
+										$queryIdOnSeqOne->{$subjectId} = $hit[3] if (!exists $queryIdOnSeqOne->{$subjectId});
+										$queryIdOnSeqOne->{$subjectId} = $hit[3] if ($queryIdOnSeqOne->{$subjectId} < $hit[3]);
+									}
+									close(TBL);
+								}
+							}
+							elsif(-d "$dir/$file")
+							{
+								unshift @dirs, "$dir/$file";
+							}
+						}
+					}while (@dirs);
+				}
+
 				my $matchedSeqOneByBes;
-				my $getBesOne = $dbh->prepare("SELECT * FROM matrix,alignment WHERE matrix.container LIKE 'sequence' AND matrix.o = 98 AND matrix.x = ? AND matrix.id = alignment.query AND alignment.subject = ?");
-				$getBesOne->execute($assembly[4],$assemblySeqOne[5]);
+				my $getBesOne = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 98 AND x = ?");
+				$getBesOne->execute($assembly[4]);
 				while(my @getBesOne = $getBesOne->fetchrow_array())
 				{
-					$matchedSeqOne->{$getBesOne[2]} = 1;
-					$matchedSeqOneByBes->{$getBesOne[2]} = "$seqDir{$getBesOne[6]}-end";
+					if(exists $queryIdOnSeqOne->{$getBesOne[0]})
+					{
+						$matchedSeqOne->{$getBesOne[2]} = 1;
+						$matchedSeqOneByBes->{$getBesOne[2]} = "$seqDir{$getBesOne[6]}-end";
+					}
 				}
 
 				my $matchedSeqOneByGenome;
-				my $getGenomeOne = $dbh->prepare("SELECT * FROM matrix,alignment WHERE matrix.container LIKE 'sequence' AND matrix.o = 99 AND matrix.x = ? AND matrix.id = alignment.query AND alignment.subject = ?");
-				$getGenomeOne->execute($assembly[4],$assemblySeqOne[5]);
+				my $getGenomeOne = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 99 AND x = ?");
+				$getGenomeOne->execute($assembly[4]);
 				while(my @getGenomeOne = $getGenomeOne->fetchrow_array())
 				{
-					$matchedSeqOne->{$getGenomeOne[2]} = 1;
-					$matchedSeqOneByGenome->{$getGenomeOne[2]} = 0 if (!exists $matchedSeqOneByGenome->{$getGenomeOne[2]});
-					$matchedSeqOneByGenome->{$getGenomeOne[2]} = $getGenomeOne[16] if($matchedSeqOneByGenome->{$getGenomeOne[2]} < $getGenomeOne[16]);
+					if(exists $queryIdOnSeqOne->{$getGenomeOne[0]})
+					{
+						$matchedSeqOne->{$getGenomeOne[2]} = 1;
+						$matchedSeqOneByGenome->{$getGenomeOne[2]} = 0 if (!exists $matchedSeqOneByGenome->{$getGenomeOne[2]});
+						$matchedSeqOneByGenome->{$getGenomeOne[2]} = $queryIdOnSeqOne->{$getGenomeOne[0]} if($matchedSeqOneByGenome->{$getGenomeOne[2]} < $queryIdOnSeqOne->{$getGenomeOne[0]});
+					}
 				}
 
 				#Contig B
@@ -540,21 +688,73 @@ END
 						$matchedSeqTwoByTag->{$getTagsTwoMatched[2]}++;
 					}
 				}
+
+				my $queryIdOnSeqTwo;
+				my $queryDirTwo;
+				for (my $position = 0; $position < length($assemblySeqTwo[5]); $position += 2)
+				{
+					$queryDirTwo .= "/q". substr($assemblySeqTwo[5],$position,2);
+				}
+				if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo")
+				{
+					my @dirs;
+					push @dirs, "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirTwo";
+
+					do{
+						my $dir = shift @dirs;
+						opendir(DIR, $dir) or die "can't opendir $dir: $!";
+						my @files = readdir(DIR);
+						closedir DIR;
+						foreach my $file (sort @files)
+						{
+							next if ($file =~ /^\./);
+							if(-f "$dir/$file")
+							{
+								if ($file =~ /(\d+)-(\d+).tbl$/)
+								{
+									my $subjectId = $2;
+									open (TBL, "$dir/$file") or die "can't open file: $dir/$file";
+									while(<TBL>)
+									{
+										chop;
+										/^#/ and next;
+										my @hit = split("\t",$_);
+										next if ($hit[12] > 0);
+										$queryIdOnSeqTwo->{$subjectId} = $hit[3] if (!exists $queryIdOnSeqTwo->{$subjectId});
+										$queryIdOnSeqTwo->{$subjectId} = $hit[3] if ($queryIdOnSeqTwo->{$subjectId} < $hit[3]);
+									}
+									close(TBL);
+								}
+							}
+							elsif(-d "$dir/$file")
+							{
+								unshift @dirs, "$dir/$file";
+							}
+						}
+					}while (@dirs);
+				}
+
 				my $matchedSeqTwoByBes;
-				my $getBesTwo = $dbh->prepare("SELECT * FROM matrix,alignment WHERE matrix.container LIKE 'sequence' AND matrix.o = 98 AND matrix.x = ? AND matrix.id = alignment.query AND alignment.subject = ?");
-				$getBesTwo->execute($assembly[4],$assemblySeqTwo[5]);
+				my $getBesTwo = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 98 AND x = ?");
+				$getBesTwo->execute($assembly[4]);
 				while(my @getBesTwo = $getBesTwo->fetchrow_array())
 				{
-					$matchedSeqTwoByBes->{$getBesTwo[2]} = "$seqDir{$getBesTwo[6]}-end";
+					if(exists $queryIdOnSeqTwo->{$getBesTwo[0]})
+					{
+						$matchedSeqTwoByBes->{$getBesTwo[2]} = "$seqDir{$getBesTwo[6]}-end";
+					}
 				}
 
 				my $matchedSeqTwoByGenome;
-				my $getGenomeTwo = $dbh->prepare("SELECT * FROM matrix,alignment WHERE matrix.container LIKE 'sequence' AND matrix.o = 99 AND matrix.x = ? AND matrix.id = alignment.query AND alignment.subject = ?");
-				$getGenomeTwo->execute($assembly[4],$assemblySeqTwo[5]);
+				my $getGenomeTwo = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 99 AND x = ?");
+				$getGenomeTwo->execute($assembly[4]);
 				while(my @getGenomeTwo = $getGenomeTwo->fetchrow_array())
 				{
-					$matchedSeqTwoByGenome->{$getGenomeTwo[2]} = 0 if (!exists $matchedSeqTwoByGenome->{$getGenomeTwo[2]});
-					$matchedSeqTwoByGenome->{$getGenomeTwo[2]} = $getGenomeTwo[16] if ($matchedSeqTwoByGenome->{$getGenomeTwo[2]} < $getGenomeTwo[16]);
+					if(exists $queryIdOnSeqTwo->{$getGenomeTwo[0]})
+					{
+						$matchedSeqTwoByGenome->{$getGenomeTwo[2]} = 0 if (!exists $matchedSeqTwoByGenome->{$getGenomeTwo[2]});
+						$matchedSeqTwoByGenome->{$getGenomeTwo[2]} = $queryIdOnSeqTwo->{$getGenomeTwo[0]} if ($matchedSeqTwoByGenome->{$getGenomeTwo[2]} < $queryIdOnSeqTwo->{$getGenomeTwo[0]});
+					}
 				}
 
 				if($chrStart)
