@@ -27,7 +27,8 @@ print header;
 if($jobFile)
 {
 	my $pid = fork();
-	if ($pid) {
+	if ($pid)
+	{
 		print <<END;
 	<script>
 	parent.informationPop("Loading process is running! This might take several minutes.");
@@ -36,7 +37,8 @@ if($jobFile)
 	</script>
 END
 	}
-	elsif($pid == 0){
+	elsif($pid == 0)
+	{
  		close (STDOUT);
 		open (FILE, ">$infile");
 		while (read ($jobFile, my $Buffer, 1024)) {
@@ -78,7 +80,8 @@ END
 		unlink ($infile);
 		exit 0;
 	}
-	else{
+	else
+	{
 		die "couldn't fork: $!\n";
 	} 
 }

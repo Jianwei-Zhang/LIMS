@@ -45,11 +45,13 @@ $html =~ s/\$keywords/$keywords/g;
 my $update = 0;
 
 my $pid = fork();
-if ($pid) {
+if ($pid)
+{
 	print header;
 	print $html;
 }
-elsif($pid == 0){
+elsif($pid == 0)
+{
  	close (STDOUT);
  	exit unless ($update);
 	my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
@@ -152,7 +154,8 @@ elsif($pid == 0){
 # 	}
 	exit 0;
 }
-else{
+else
+{
 	die "couldn't fork: $!\n";
 } 
 

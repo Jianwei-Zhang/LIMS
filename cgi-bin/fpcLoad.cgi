@@ -28,14 +28,16 @@ print header;
 if($fpcFile)
 {
 	my $pid = fork();
-	if ($pid) {
+	if ($pid)
+	{
 		print <<END;
 	<script>
 	parent.closeDialog();
 	</script>
 END
 	}
-	elsif($pid == 0){
+	elsif($pid == 0)
+	{
 		open (FILE, ">$infile");
 		while (read ($fpcFile, my $Buffer, 1024)) {
 			print FILE $Buffer;
@@ -215,7 +217,8 @@ END
 		unlink ($infile);
 		exit 0;
 	}
-	else{
+	else
+	{
 		die "couldn't fork: $!\n";
 	} 
 }

@@ -37,7 +37,8 @@ print header;
 if($besFile || $besFilePath)
 {
 	my $pid = fork();
-	if ($pid) {
+	if ($pid)
+	{
 		print <<END;
 <script>
 parent.closeDialog();
@@ -45,7 +46,8 @@ parent.refresh("menu");
 </script>	
 END
 	}
-	elsif($pid == 0){
+	elsif($pid == 0)
+	{
 		close (STDOUT);
 		if($besFilePath)
 		{
@@ -135,7 +137,8 @@ END
 		unlink ($infile) if (!$besFilePath);
 		exit 0;
 	}
-	else{
+	else
+	{
 		die "couldn't fork: $!\n";
 	} 
 }

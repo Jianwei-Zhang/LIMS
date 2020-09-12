@@ -65,7 +65,8 @@ if($type)
 		if($tableFile || $tableFilePath)
 		{
 			my $pid = fork();
-			if ($pid) {
+			if ($pid)
+			{
 				print <<END;
 <script>
 parent.closeDialog();
@@ -73,7 +74,8 @@ parent.refresh("$refresh");
 </script>	
 END
 			}
-			elsif($pid == 0){
+			elsif($pid == 0)
+			{
 				close (STDOUT);
 				if($tableFilePath)
 				{
@@ -136,7 +138,8 @@ END
 				my $updateParent = $dbh->do("UPDATE matrix SET o = $line, creationDate = NOW() WHERE id = $parentId");
 				exit 0;
 			}
-			else{
+			else
+			{
 				die "couldn't fork: $!\n";
 			} 
 		}

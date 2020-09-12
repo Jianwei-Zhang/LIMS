@@ -34,7 +34,8 @@ print header;
 if($queryGenomeId && $subjectGenomeId && ($alignmentFile || $alignmentFilePath))
 {
 	my $pid = fork();
-	if ($pid) {
+	if ($pid)
+	{
 		print <<END;
 <script>
 	parent.closeDialog();
@@ -42,7 +43,8 @@ if($queryGenomeId && $subjectGenomeId && ($alignmentFile || $alignmentFilePath))
 </script>	
 END
 	}
-	elsif($pid == 0){
+	elsif($pid == 0)
+	{
 		if($alignmentFilePath)
 		{
 			#$alignmentInfile = $alignmentFilePath;
@@ -438,7 +440,8 @@ END
 			}
 		}
 	}
-	else{
+	else
+	{
 		die "couldn't fork: $!\n";
 	} 
 }

@@ -55,7 +55,8 @@ for(@items)
 	if ($itemId eq 0)
 	{
 		my $pid = fork();
-		if ($pid) {
+		if ($pid)
+		{
 			print <<END;
 	<script>
 		parent.closeDialog();
@@ -64,7 +65,8 @@ for(@items)
 END
 			
 		}
-		elsif($pid == 0){
+		elsif($pid == 0)
+		{
 			close (STDOUT);
 			if ($option eq 'delTempFiles')
 			{
@@ -168,7 +170,8 @@ END
 			}
 
 		}
-		else{
+		else
+		{
 			die "couldn't fork: $!\n";
 		} 
 	}

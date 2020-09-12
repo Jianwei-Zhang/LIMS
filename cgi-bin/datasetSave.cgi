@@ -77,7 +77,8 @@ if($datasetName)
 				if($datasetFile || $datasetFilePath)
 				{
 					my $pid = fork();
-					if ($pid) {
+					if ($pid)
+					{
 						print <<END;
 <script>
 parent.closeDialog();
@@ -86,7 +87,8 @@ parent.refresh("general");
 </script>	
 END
 					}
-					elsif($pid == 0){
+					elsif($pid == 0)
+					{
 						close (STDOUT);
 						my $updateDatasetToRunning = $dbh->do("UPDATE matrix SET barcode = -1 WHERE id = $datasetId");			
 						if($datasetFilePath)
@@ -147,7 +149,8 @@ END
 						my $updateDatasetToLoaded = $dbh->do("UPDATE matrix SET x = $line, barcode = 1, creationDate = NOW() WHERE id = $datasetId");			
 						exit 0;
 					}
-					else{
+					else
+					{
 						die "couldn't fork: $!\n";
 					} 
 				}
@@ -191,7 +194,8 @@ END
 				$insertDataset->execute($datasetName,$datasetType,$parentId,$datasetDescription,$userName);
 				$datasetId = $dbh->{mysql_insertid};
 				my $pid = fork();
-				if ($pid) {
+				if ($pid)
+				{
 					print <<END;
 <script>
 parent.closeDialog();
@@ -199,7 +203,8 @@ parent.refresh("general");
 </script>	
 END
 				}
-				elsif($pid == 0){
+				elsif($pid == 0)
+				{
 					close (STDOUT);
 					my $updateDatasetToRunning = $dbh->do("UPDATE matrix SET barcode = -1 WHERE id = $datasetId");			
 					if($datasetFilePath)
@@ -260,7 +265,8 @@ END
 					my $updateDatasetToLoaded = $dbh->do("UPDATE matrix SET x = $line, barcode = 1, creationDate = NOW() WHERE id = $datasetId");			
 					exit 0;
 				}
-				else{
+				else
+				{
 					die "couldn't fork: $!\n";
 				} 
 			}

@@ -127,7 +127,8 @@ if($genomeName)
 				if($genomeFile || $genomeFilePath)
 				{
 					my $pid = fork();
-					if ($pid) {
+					if ($pid)
+					{
 						print <<END;
 <script>
 parent.closeDialog();
@@ -136,7 +137,8 @@ parent.refresh("general");
 </script>	
 END
 					}
-					elsif($pid == 0){
+					elsif($pid == 0)
+					{
 						my $updateGenomeToRunning = $dbh->do("UPDATE matrix SET o = 0, barcode = -1 WHERE id = $genomeId");			
 
 						if($genomeFilePath)
@@ -392,7 +394,8 @@ END
 						my $updateGenomeToLoaded = $dbh->do("UPDATE matrix SET o = $seqNumber, barcode = 1, creationDate = NOW() WHERE id = $genomeId");			
 						exit 0;
 					}
-					else{
+					else
+					{
 						die "couldn't fork: $!\n";
 					} 
 				}
@@ -437,7 +440,8 @@ END
 				$genomeId = $dbh->{mysql_insertid};
 				my $insertLink = $dbh->do("INSERT INTO link VALUES ($asbProjectId,$genomeId,'asbProject')") if ($asbProjectId);
 				my $pid = fork();
-				if ($pid) {
+				if ($pid)
+				{
 					print <<END;
 <script>
 parent.closeDialog();
@@ -445,7 +449,8 @@ parent.refresh("general");
 </script>	
 END
 				}
-				elsif($pid == 0){
+				elsif($pid == 0)
+				{
 					close (STDOUT);
 					my $updateGenomeToRunning = $dbh->do("UPDATE matrix SET barcode = -1 WHERE id = $genomeId");			
 					if($agpFile) # since agp file is relatively small, we upload it first
@@ -627,7 +632,8 @@ END
 					my $updateGenomeToLoaded = $dbh->do("UPDATE matrix SET o = $seqNumber, barcode = 1, creationDate = NOW() WHERE id = $genomeId");			
 					exit 0;
 				}
-				else{
+				else
+				{
 					die "couldn't fork: $!\n";
 				} 
 			}

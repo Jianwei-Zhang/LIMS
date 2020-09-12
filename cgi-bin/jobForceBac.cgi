@@ -32,7 +32,8 @@ my $format = 'fasta';
 my @jobId = param('jobId');
 print header;
 my $pid = fork();
-if ($pid) {
+if ($pid)
+{
 	print <<END;
 <script>
 	parent.closeDialog();
@@ -41,7 +42,8 @@ if ($pid) {
 </script>	
 END
 }
-elsif($pid == 0){
+elsif($pid == 0)
+{
 	close (STDOUT);
 	my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 	#connect to the mysql server
@@ -239,6 +241,7 @@ elsif($pid == 0){
 	}
 	exit 0;
 }
-else{
+else
+{
 	die "couldn't fork: $!\n";
 } 

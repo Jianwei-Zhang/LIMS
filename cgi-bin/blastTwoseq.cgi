@@ -78,7 +78,8 @@ END
 		exit;
 	}
 	my $pid = fork();
-	if ($pid) {
+	if ($pid)
+	{
 		print <<END;
 <script>
 	parent.closeDialog();
@@ -87,7 +88,8 @@ END
 </script>	
 END
 	}
-	elsif($pid == 0){
+	elsif($pid == 0)
+	{
 		close (STDOUT);
 		#connect to the mysql server
 		my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
@@ -262,7 +264,8 @@ END
 		unlink("$commoncfg->{TMPDIR}/$getSequenceTwo[0].$$.seq");
 		unlink("$commoncfg->{TMPDIR}/$getSequenceOne[0].$$.seq");
 	}
-	else{
+	else
+	{
 		die "couldn't fork: $!\n";
 	} 
 }
@@ -284,7 +287,8 @@ END
 		}
 		
 		my $pid = fork();
-		if ($pid) {
+		if ($pid)
+		{
 			print <<END;
 	<script>
 		parent.closeDialog();
@@ -293,7 +297,8 @@ END
 	</script>	
 END
 		}
-		elsif($pid == 0){
+		elsif($pid == 0)
+		{
 			close (STDOUT);
 			#connect to the mysql server
 			my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
@@ -599,7 +604,8 @@ END
 				}
 			}
 		}
-		else{
+		else
+		{
 			die "couldn't fork: $!\n";
 		} 
 	}

@@ -26,7 +26,8 @@ print header;
 if($libraryId)
 {
 	my $pid = fork();
-	if ($pid) {
+	if ($pid)
+	{
 		print <<END;
 	<script>
 		parent.closeDialog();
@@ -34,7 +35,8 @@ if($libraryId)
 	</script>	
 END
 	}
-	elsif($pid == 0){
+	elsif($pid == 0)
+	{
 		close (STDOUT);
 		#connect to the mysql server
 		my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
@@ -133,7 +135,8 @@ END
 		} while($toDelete);
 		exit 0;
 	}
-	else{
+	else
+	{
 		die "couldn't fork: $!\n";
 	} 
 }

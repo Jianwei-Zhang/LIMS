@@ -26,7 +26,8 @@ if ($fpcId)
 {
 
 	my $pid = fork();
-	if ($pid) {
+	if ($pid)
+	{
 		print <<END;
 <script>
 	parent.closeDialog();
@@ -34,7 +35,8 @@ if ($fpcId)
 </script>	
 END
 	}
-	elsif($pid == 0){
+	elsif($pid == 0)
+	{
 		close (STDOUT);
 		my $fpc=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 		$fpc->execute($fpcId);
@@ -69,7 +71,8 @@ END
 			}
 		}
 	}
-	else{
+	else
+	{
 		die "couldn't fork: $!\n";
 	} 
 }
