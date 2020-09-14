@@ -439,6 +439,7 @@ END
 				}
 			}
 		}
+		exit 0;
 	}
 	else
 	{

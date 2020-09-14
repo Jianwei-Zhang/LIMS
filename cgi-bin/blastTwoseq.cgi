@@ -99,9 +99,9 @@ END
 		open (SEQA,">$commoncfg->{TMPDIR}/$getSequenceOne[0].$$.seq") or die "can't open file: $commoncfg->{TMPDIR}/$getSequenceOne[0].$$.seq";
 		my $sequenceOneDetails = decode_json $getSequenceOne[8];
 		my $sequenceOne = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
-		my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceOneDetails->{'sequence'}",
+		my $inOne = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceOneDetails->{'sequence'}",
 								-format => 'Fasta');
-		while ( my $seq = $in->next_seq() )
+		while ( my $seq = $inOne->next_seq() )
 		{
 			$sequenceOne = $seq->seq;
 		}
@@ -113,9 +113,9 @@ END
 		open (SEQB,">$commoncfg->{TMPDIR}/$getSequenceTwo[0].$$.seq") or die "can't open file: $commoncfg->{TMPDIR}/$getSequenceTwo[0].$$.seq";
 		my $sequenceTwoDetails = decode_json $getSequenceTwo[8];
 		my $sequenceTwo = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
-		my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceTwoDetails->{'sequence'}",
+		my $inTwo = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceTwoDetails->{'sequence'}",
 								-format => 'Fasta');
-		while ( my $seq = $in->next_seq() )
+		while ( my $seq = $inTwo->next_seq() )
 		{
 			$sequenceTwo = $seq->seq;
 		}
@@ -263,6 +263,7 @@ END
 		}
 		unlink("$commoncfg->{TMPDIR}/$getSequenceTwo[0].$$.seq");
 		unlink("$commoncfg->{TMPDIR}/$getSequenceOne[0].$$.seq");
+		exit 0;
 	}
 	else
 	{
@@ -308,7 +309,7 @@ END
 			my $target=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 			$target->execute($assembly[4]);
 			my @target = $target->fetchrow_array();
-			my $assemblySequenceLength;
+			my $sequenceLength;
 			open (SEQALL,">$commoncfg->{TMPDIR}/$assembly[4].$$.seq") or die "can't open file: $commoncfg->{TMPDIR}/$assembly[4].$$.seq";
 			open (SEQNEW,">$commoncfg->{TMPDIR}/$assembly[4].$querySeq.$$.seq") or die "can't open file: $commoncfg->{TMPDIR}/$assembly[4].$querySeq.$$.seq";
 			if($target[1] eq 'library')
@@ -321,7 +322,7 @@ END
 					$getSequences->execute($getClones[1]);
 					while(my @getSequences = $getSequences->fetchrow_array())
 					{
-						$assemblySequenceLength->{$getSequences[0]} = $getSequences[5];
+						$sequenceLength->{$getSequences[0]} = $getSequences[5];
 						my $sequenceDetails = decode_json $getSequences[8];
 						my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
 						my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
@@ -341,7 +342,7 @@ END
 				$getSequences->execute($assembly[4]);
 				while(my @getSequences = $getSequences->fetchrow_array())
 				{
-					$assemblySequenceLength->{$getSequences[0]} = $getSequences[5];
+					$sequenceLength->{$getSequences[0]} = $getSequences[5];
 					my $sequenceDetails = decode_json $getSequences[8];
 					my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
 					my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
@@ -514,14 +515,14 @@ END
 						my @alignments;
 						my @alignmentsSwitched;
 						my $goodOverlap = ($checkGood) ? 0 : 1;
-						open (CMDA,"$alignEngineList->{$alignEngine} -query $commoncfg->{TMPDIR}/$hit[0].$$.seq -subject $commoncfg->{TMPDIR}/$hit[1].$$.seq -dust no -evalue 1e-200 -perc_identity $identityAlignment -outfmt 6 |") or die "can't open CMD: $!";
+						open (CMDA,"$alignEngineList->{$alignEngine} -query $commoncfg->{TMPDIR}/$hit[0].$$.seq -subject $commoncfg->{TMPDIR}/$hit[1].$$.seq -dust no -evalue 1e-200 -perc_identity $identityBlast -outfmt 6 |") or die "can't open CMD: $!";
 						while(<CMDA>)
 						{
 							chop;
 							/^#/ and next;
 							my @detailedHit = split("\t",$_);
 							$detailedHit[12] = 0; #add a hidden column
-							if($detailedHit[3] >= $minOverlapAlignment)
+							if($detailedHit[3] >= $minOverlapBlast)
 							{
 								my $alignment = join "\t",@detailedHit;
 								push @alignments, $alignment;
@@ -603,6 +604,7 @@ END
 					unlink("$commoncfg->{TMPDIR}/$subjectId.$$.seq");
 				}
 			}
+			exit 0;
 		}
 		else
 		{

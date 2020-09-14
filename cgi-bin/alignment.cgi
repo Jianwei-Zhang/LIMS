@@ -761,6 +761,7 @@ Dev Team
 $siteName
 eof
 		}
+		exit 0;
 	}
 	else
 	{

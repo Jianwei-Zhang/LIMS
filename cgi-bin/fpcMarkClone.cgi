@@ -70,6 +70,7 @@ END
 				my $updateFpcClone=$dbh->do("UPDATE matrix SET z = 1 WHERE container LIKE 'fpcClone' AND o = $fpcId AND name LIKE '$bac'");	
 			}
 		}
+		exit 0;
 	}
 	else
 	{
