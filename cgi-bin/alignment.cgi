@@ -507,8 +507,8 @@ END
 							print ALN join "\t", @detailedHit;
 							print ALN "\n";
 							close(ALN);
-							$lastQuery == $detailedHit[0];
-							$lastSubject == $detailedHit[1];
+							$lastQuery = $detailedHit[0];
+							$lastSubject = $detailedHit[1];
 						}
 						foreach (@alignmentsSwitched)
 						{
@@ -537,8 +537,8 @@ END
 							print ALN join "\t", @detailedHit;
 							print ALN "\n";
 							close(ALN);
-							$lastQuery == $detailedHit[0];
-							$lastSubject == $detailedHit[1];
+							$lastQuery = $detailedHit[0];
+							$lastSubject = $detailedHit[1];
 						}
 					}
 				}
