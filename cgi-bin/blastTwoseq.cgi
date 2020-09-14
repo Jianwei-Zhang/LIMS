@@ -235,7 +235,7 @@ END
 				{
 					$goodOverlap = 1;
 				}
-				$alignment = join "\t",@detailedHit;
+				$alignment = join "\t",@hit;
 				push @alignmentsSwitched, $alignment;							
 			}									
 		}
