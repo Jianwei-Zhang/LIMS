@@ -22,20 +22,20 @@ my $userName = $userDetail->{"userName"};
 
 my $commoncfg = readConfig("main.conf");
 my $userConfig = new userConfig;
-## sequences will be saved to $commoncfg->{DATADIR}/alignments
-until (-e "$commoncfg->{DATADIR}/alignments")
+## alignments will be saved to $commoncfg->{DATADIR}/alignments
+unless (-e "$commoncfg->{DATADIR}/alignments")
 {
 	mkdir "$commoncfg->{DATADIR}/alignments";
 }
-until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq")
+unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq")
 {
 	mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq";
 }
-until (-e "$commoncfg->{DATADIR}/alignments/seqToSet")
+unless (-e "$commoncfg->{DATADIR}/alignments/seqToSet")
 {
 	mkdir "$commoncfg->{DATADIR}/alignments/seqToSet";
 }
-until (-e "$commoncfg->{DATADIR}/alignments/setToSet")
+unless (-e "$commoncfg->{DATADIR}/alignments/setToSet")
 {
 	mkdir "$commoncfg->{DATADIR}/alignments/setToSet";
 }
@@ -122,72 +122,6 @@ END
 		print SEQB ">$getSequenceTwo[0]\n$sequenceTwo\n";
 		close(SEQB);
 
-		my $seqToSeq;
-		my $queryDir;
-		my $subjectDir;
-		my $queryDirSwitched;
-		my $subjectDirSwitched;
-
-		unless (exists $seqToSeq->{$seqOne}->{$seqTwo}) # clean old data first
-		{
-
-			for (my $position = 0; $position < length($seqOne); $position += 2)
-			{
-				$queryDir .= "/q". substr($seqOne,$position,2);
-				until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir")
-				{
-					mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
-				}
-			}
-
-			for (my $position = 0; $position < length($seqTwo); $position += 2)
-			{
-				$subjectDir .= "/s". substr($seqTwo,$position,2);
-				until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir")
-				{
-					mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir";
-				}
-			}
-
-			unlink "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$seqOne-$seqTwo.tbl"; #delete old alignments
-			until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$seqOne-$seqTwo.tbl")
-			{
-				open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$seqOne-$seqTwo.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$seqOne-$seqTwo.tbl";
-				print ALN "#SEQtoSEQ_1e-200_$identityBlast\_$minOverlapBlast\n";
-				print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
-				close(ALN);
-
-			}
-
-			for (my $position = 0; $position < length($seqTwo); $position += 2)
-			{
-				$queryDirSwitched .= "/q". substr($seqTwo,$position,2);
-				until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched")
-				{
-					mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched";
-				}
-			}
-
-			for (my $position = 0; $position < length($seqOne); $position += 2)
-			{
-				$subjectDirSwitched .= "/s". substr($seqOne,$position,2);
-				until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched")
-				{
-					mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched";
-				}
-			}
-
-			unlink "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$seqTwo-$seqOne.tbl"; #delete old alignments
-			until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$seqTwo-$seqOne.tbl")
-			{
-				open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$seqTwo-$seqOne.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$seqTwo-$seqOne.tbl";
-				print ALN "#SEQtoSEQ_1e-200_$identityBlast\_$minOverlapBlast\n";
-				print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
-				close(ALN);
-			}
-			$seqToSeq->{$seqOne}->{$seqTwo} = 1;
-		}
-
 		my @alignments;
 		my @alignmentsSwitched;
 		my $goodOverlap = ($checkGood) ? 0 : 1;
@@ -215,8 +149,8 @@ END
 					$exchange = $hit[9];
 					$hit[9] = $hit[7];
 					$hit[7] = $exchange;
-					$exchange = $seqTwo;
-					$seqTwo = $hit[0];
+					$exchange = $hit[1];
+					$hit[1] = $hit[0];
 					$hit[0] = $exchange;
 				}
 				else
@@ -227,8 +161,8 @@ END
 					$exchange = $hit[9];
 					$hit[9] = $hit[6];
 					$hit[6] = $exchange;
-					$exchange = $seqTwo;
-					$seqTwo = $hit[0];
+					$exchange = $hit[1];
+					$hit[1] = $hit[0];
 					$hit[0] = $exchange;
 				}
 				if($hit[6] == 1 || $hit[7] == $getSequenceTwo[5])
@@ -242,6 +176,56 @@ END
 		close(CMD);
 		if($goodOverlap)
 		{
+			my $queryDir;
+			my $subjectDir;
+			my $queryDirSwitched;
+			my $subjectDirSwitched;
+			for (my $position = 0; $position < length($seqOne); $position += 2)
+			{
+				$queryDir .= "/q". substr($seqOne,$position,2);
+				unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir")
+				{
+					mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
+				}
+			}
+
+			for (my $position = 0; $position < length($seqTwo); $position += 2)
+			{
+				$subjectDir .= "/s". substr($seqTwo,$position,2);
+				unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir")
+				{
+					mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir";
+				}
+			}
+
+			open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$seqOne-$seqTwo.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$seqOne-$seqTwo.tbl";
+			print ALN "#SEQtoSEQ_1e-200_$identityBlast\_$minOverlapBlast\n";
+			print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
+			close(ALN);
+
+			for (my $position = 0; $position < length($seqTwo); $position += 2)
+			{
+				$queryDirSwitched .= "/q". substr($seqTwo,$position,2);
+				unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched")
+				{
+					mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched";
+				}
+			}
+
+			for (my $position = 0; $position < length($seqOne); $position += 2)
+			{
+				$subjectDirSwitched .= "/s". substr($seqOne,$position,2);
+				unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched")
+				{
+					mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched";
+				}
+			}
+
+			open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$seqTwo-$seqOne.tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$seqTwo-$seqOne.tbl";
+			print ALN "#SEQtoSEQ_1e-200_$identityBlast\_$minOverlapBlast\n";
+			print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
+			close(ALN);
+
 			foreach (@alignments)
 			{
 				my @detailedHit = split("\t",$_);
@@ -261,8 +245,8 @@ END
 				close(ALN);
 			}
 		}
-		unlink("$commoncfg->{TMPDIR}/$getSequenceTwo[0].$$.seq");
-		unlink("$commoncfg->{TMPDIR}/$getSequenceOne[0].$$.seq");
+		unlink("$commoncfg->{TMPDIR}/$getSequenceTwo[0].$$.seq") if (-e "$commoncfg->{TMPDIR}/$getSequenceTwo[0].$$.seq");
+		unlink("$commoncfg->{TMPDIR}/$getSequenceOne[0].$$.seq") if (-e "$commoncfg->{TMPDIR}/$getSequenceOne[0].$$.seq");
 		exit 0;
 	}
 	else
@@ -360,10 +344,6 @@ END
 
 			system( "$makeblastdb -in $commoncfg->{TMPDIR}/$assembly[4].$$.seq -dbtype nucl" );
 			my $seqToSeq;
-			my $queryDir;
-			my $subjectDir;
-			my $queryDirSwitched;
-			my $subjectDirSwitched;
 			open (CMD,"$alignEngineList->{$alignEngine} -query $commoncfg->{TMPDIR}/$assembly[4].$querySeq.$$.seq -task $task -db $commoncfg->{TMPDIR}/$assembly[4].$$.seq -dust no -evalue 1e-200 -perc_identity $identityBlast -max_target_seqs 10 -num_threads 8 -outfmt 6 |") or die "can't open CMD: $!";
 			while(<CMD>)
 			{
@@ -374,40 +354,58 @@ END
 				next if($hit[0] eq $hit[1]);
 				next if($hit[3] < $minOverlapBlast);
 
-				unless (exists $seqToSeq->{$hit[0]}->{$hit[1]}) # clean old data first
+				my $queryDir;
+				my $queryDirSwitched;
+				my $subjectDir;
+				my $subjectDirSwitched;
+				if (exists $seqToSeq->{$hit[0]}->{$hit[1]}) # clean old data first
 				{
 					for (my $position = 0; $position < length($hit[0]); $position += 2)
 					{
 						$queryDir .= "/q". substr($hit[0],$position,2);
-						until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir")
+					}
+					for (my $position = 0; $position < length($hit[1]); $position += 2)
+					{
+						$subjectDir .= "/s". substr($hit[1],$position,2);
+					}
+					for (my $position = 0; $position < length($hit[1]); $position += 2)
+					{
+						$queryDirSwitched .= "/q". substr($hit[1],$position,2);
+					}
+
+					for (my $position = 0; $position < length($hit[0]); $position += 2)
+					{
+						$subjectDirSwitched .= "/s". substr($hit[0],$position,2);
+					}
+					$seqToSeq->{$hit[0]}->{$hit[1]}++;
+				}
+				else
+				{
+					for (my $position = 0; $position < length($hit[0]); $position += 2)
+					{
+						$queryDir .= "/q". substr($hit[0],$position,2);
+						unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir")
 						{
 							mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
 						}
 					}
-
 					for (my $position = 0; $position < length($hit[1]); $position += 2)
 					{
 						$subjectDir .= "/s". substr($hit[1],$position,2);
-						until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir")
+						unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir")
 						{
 							mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir";
 						}
 					}
-
-					unlink "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl"; #delete old alignments
-					until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl")
-					{
-						open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl";
-						print ALN "#SEQtoSEQ_1e-200_$identityBlast\_$minOverlapBlast\n";
-						print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
-						close(ALN);
-
-					}
+					open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl";
+					print ALN "#SEQtoSEQ_1e-200_$identityBlast\_$minOverlapBlast\n";
+					print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
+					close(ALN);
 
 					for (my $position = 0; $position < length($hit[1]); $position += 2)
 					{
 						$queryDirSwitched .= "/q". substr($hit[1],$position,2);
-						until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched")
+						unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched")
 						{
 							mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched";
 						}
@@ -416,20 +414,16 @@ END
 					for (my $position = 0; $position < length($hit[0]); $position += 2)
 					{
 						$subjectDirSwitched .= "/s". substr($hit[0],$position,2);
-						until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched")
+						unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched")
 						{
 							mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched";
 						}
 					}
 
-					unlink "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl"; #delete old alignments
-					until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl")
-					{
-						open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl";
-						print ALN "#SEQtoSEQ_1e-200_$identityBlast\_$minOverlapBlast\n";
-						print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
-						close(ALN);
-					}
+					open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl";
+					print ALN "#SEQtoSEQ_1e-200_$identityBlast\_$minOverlapBlast\n";
+					print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
+					close(ALN);
 					$seqToSeq->{$hit[0]}->{$hit[1]} = 1;
 				}
 
@@ -475,43 +469,43 @@ END
 				}
 				else
 				{
-					#prepare sequences for rerun alignment
-					unless(-e "$commoncfg->{TMPDIR}/$hit[0].$$.seq")
-					{
-						my $getSequenceA = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-						$getSequenceA->execute($hit[0]);
-						my @getSequenceA =  $getSequenceA->fetchrow_array();
-						open (SEQA,">$commoncfg->{TMPDIR}/$hit[0].$$.seq") or die "can't open file: $commoncfg->{TMPDIR}/$hit[0].$$.seq";
-						my $sequenceDetailsA = decode_json $getSequenceA[8];
-						my $sequenceA = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
-						my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetailsA->{'sequence'}",
-												-format => 'Fasta');
-						while ( my $seq = $in->next_seq() )
-						{
-							$sequenceA = $seq->seq;
-						}
-						print SEQA ">$getSequenceA[0]\n$sequenceA\n";
-						close(SEQA);
-					}
-					unless(-e "$commoncfg->{TMPDIR}/$hit[1].$$.seq")
-					{
-						my $getSequenceB = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
-						$getSequenceB->execute($hit[1]);
-						my @getSequenceB =  $getSequenceB->fetchrow_array();
-						open (SEQB,">$commoncfg->{TMPDIR}/$hit[1].$$.seq") or die "can't open file: $commoncfg->{TMPDIR}/$hit[1].$$.seq";
-						my $sequenceDetailsB = decode_json $getSequenceB[8];
-						my $sequenceB = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
-						my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetailsB->{'sequence'}",
-												-format => 'Fasta');
-						while ( my $seq = $in->next_seq() )
-						{
-							$sequenceB = $seq->seq;
-						}
-						print SEQB ">$getSequenceB[0]\n$sequenceB\n";
-						close(SEQB);
-					}
 					if ($seqToSeq->{$hit[1]}->{$hit[0]} == 1) #check if this is the first hit
 					{
+						#prepare sequences for rerun alignment
+						unless(-e "$commoncfg->{TMPDIR}/$hit[0].$$.seq")
+						{
+							my $getSequenceA = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+							$getSequenceA->execute($hit[0]);
+							my @getSequenceA =  $getSequenceA->fetchrow_array();
+							open (SEQA,">$commoncfg->{TMPDIR}/$hit[0].$$.seq") or die "can't open file: $commoncfg->{TMPDIR}/$hit[0].$$.seq";
+							my $sequenceDetailsA = decode_json $getSequenceA[8];
+							my $sequenceA = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+							my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetailsA->{'sequence'}",
+													-format => 'Fasta');
+							while ( my $seq = $in->next_seq() )
+							{
+								$sequenceA = $seq->seq;
+							}
+							print SEQA ">$getSequenceA[0]\n$sequenceA\n";
+							close(SEQA);
+						}
+						unless(-e "$commoncfg->{TMPDIR}/$hit[1].$$.seq")
+						{
+							my $getSequenceB = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
+							$getSequenceB->execute($hit[1]);
+							my @getSequenceB =  $getSequenceB->fetchrow_array();
+							open (SEQB,">$commoncfg->{TMPDIR}/$hit[1].$$.seq") or die "can't open file: $commoncfg->{TMPDIR}/$hit[1].$$.seq";
+							my $sequenceDetailsB = decode_json $getSequenceB[8];
+							my $sequenceB = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
+							my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetailsB->{'sequence'}",
+													-format => 'Fasta');
+							while ( my $seq = $in->next_seq() )
+							{
+								$sequenceB = $seq->seq;
+							}
+							print SEQB ">$getSequenceB[0]\n$sequenceB\n";
+							close(SEQB);
+						}
 						my @alignments;
 						my @alignmentsSwitched;
 						my $goodOverlap = ($checkGood) ? 0 : 1;
@@ -588,7 +582,6 @@ END
 						}
 					}
 				}
-				$seqToSeq->{$hit[1]}->{$hit[0]}++;
 			}
 			close(CMD);
 			unlink("$commoncfg->{TMPDIR}/$assembly[4].$$.seq");
@@ -598,10 +591,10 @@ END
 			unlink("$commoncfg->{TMPDIR}/$assembly[4].$$.seq.nsq");
 			foreach my $queryId (keys %$seqToSeq)
 			{
-				unlink("$commoncfg->{TMPDIR}/$queryId.$$.seq");
+				unlink("$commoncfg->{TMPDIR}/$queryId.$$.seq") if (-e "$commoncfg->{TMPDIR}/$queryId.$$.seq");
 				foreach my $subjectId (keys %{$seqToSeq->{$queryId}})
 				{
-					unlink("$commoncfg->{TMPDIR}/$subjectId.$$.seq");
+					unlink("$commoncfg->{TMPDIR}/$subjectId.$$.seq") if (-e "$commoncfg->{TMPDIR}/$subjectId.$$.seq");
 				}
 			}
 			exit 0;

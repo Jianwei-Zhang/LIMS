@@ -21,13 +21,30 @@ my $userName = $userDetail->{"userName"};
 
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
+## alignments will be saved to $commoncfg->{DATADIR}/alignments
+unless (-e "$commoncfg->{DATADIR}/alignments")
+{
+	mkdir "$commoncfg->{DATADIR}/alignments";
+}
+unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq")
+{
+	mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq";
+}
+unless (-e "$commoncfg->{DATADIR}/alignments/seqToSet")
+{
+	mkdir "$commoncfg->{DATADIR}/alignments/seqToSet";
+}
+unless (-e "$commoncfg->{DATADIR}/alignments/setToSet")
+{
+	mkdir "$commoncfg->{DATADIR}/alignments/setToSet";
+}
 
 my $queryGenomeId = param ('queryGenomeId') || '';
 my $subjectGenomeId = param ('subjectGenomeId') || '';
 my $alignEngine = param ('alignEngine') || 'blastn';
 my $alignmentFile = upload ('alignmentFile');
 my $alignmentFilePath = param ('alignmentFilePath') || '';
-my $alignmentInfile = "$commoncfg->{TMPDIR}/$$.tbl";
+my $alignmentInfile = "$commoncfg->{TMPDIR}/$queryGenomeId-$subjectGenomeId.tbl";
 
 print header;
 
@@ -64,7 +81,8 @@ END
 		my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
 		my $setId;
-		my $queryId;
+		my $queryNameToId;
+		my $subjectNameToId;
 		my $queryGenome=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 		$queryGenome->execute($queryGenomeId);
 		my @queryGenome = $queryGenome->fetchrow_array();
@@ -78,9 +96,8 @@ END
 				$getSequences->execute($getClones[1]);
 				while(my @getSequences = $getSequences->fetchrow_array())
 				{
-					$queryId->{$getSequences[2]} = $getSequences[0];
+					$queryNameToId->{$getSequences[2]} = $getSequences[0];
 					$setId->{$getSequences[0]} = $getSequences[4];
-
 				}
 			}
 		}
@@ -90,15 +107,14 @@ END
 			$getSequences->execute($queryGenomeId);
 			while(my @getSequences = $getSequences->fetchrow_array())
 			{
-				$queryId->{$getSequences[2]} = $getSequences[0];
+				$queryNameToId->{$getSequences[2]} = $getSequences[0];
 				$setId->{$getSequences[0]} = $getSequences[4];
 			}
 		}
 
-		my $subjectId;
 		if ($queryGenomeId eq $subjectGenomeId)
 		{
-			$subjectId = $queryId;
+			$subjectNameToId = $queryNameToId;
 		}
 		else
 		{
@@ -115,7 +131,7 @@ END
 					$getSequences->execute($getClones[1]);
 					while(my @getSequences = $getSequences->fetchrow_array())
 					{
-						$subjectId->{$getSequences[2]} = $getSequences[0];
+						$subjectNameToId->{$getSequences[2]} = $getSequences[0];
 						$setId->{$getSequences[0]} = $getSequences[4];
 					}
 				}
@@ -126,7 +142,7 @@ END
 				$getSequences->execute($subjectGenomeId);
 				while(my @getSequences = $getSequences->fetchrow_array())
 				{
-					$subjectId->{$getSequences[2]} = $getSequences[0];
+					$subjectNameToId->{$getSequences[2]} = $getSequences[0];
 					$setId->{$getSequences[0]} = $getSequences[4];
 				}
 			}
@@ -134,13 +150,9 @@ END
 
 		my $seqToSeq;
 		my $seqToSet;
-		my $setToSet;
-		my $queryDir;
-		my $subjectDir;
 		my $seqToSetSwitched;
+		my $setToSet;
 		my $setToSetSwitched;
-		my $queryDirSwitched;
-		my $subjectDirSwitched;
 
 		open(TBL, "$alignmentInfile") or die "cannot open file $alignmentInfile";
 		while(<TBL>)
@@ -150,66 +162,77 @@ END
 			my @hit = split("\t",$_);
 			$hit[12] = 0; #add a hidden column
 			next if($hit[0] eq $hit[1]);
-			if (exists $queryId->{$hit[0]} && exists $subjectId->{$hit[1]})
+			if (exists $queryNameToId->{$hit[0]} && exists $subjectNameToId->{$hit[1]})
 			{
-				$hit[0] = $queryId->{$hit[0]};
-				$hit[1] = $subjectId->{$hit[1]};
-
-				unless (exists $seqToSeq->{$hit[0]}->{$hit[1]}) # clean old data first
+				$hit[0] = $queryNameToId->{$hit[0]};
+				$hit[1] = $subjectNameToId->{$hit[1]};
+				my $queryDir;
+				my $queryDirSwitched;
+				my $subjectDir;
+				my $subjectDirSwitched;
+				if (exists $seqToSeq->{$hit[0]}->{$hit[1]})
 				{
 					for (my $position = 0; $position < length($hit[0]); $position += 2)
 					{
 						$queryDir .= "/q". substr($hit[0],$position,2);
-						until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir")
+					}
+					for (my $position = 0; $position < length($hit[1]); $position += 2)
+					{
+						$subjectDir .= "/s". substr($hit[1],$position,2);
+					}
+					for (my $position = 0; $position < length($hit[1]); $position += 2)
+					{
+						$queryDirSwitched .= "/q". substr($hit[1],$position,2);
+					}
+					for (my $position = 0; $position < length($hit[0]); $position += 2)
+					{
+						$subjectDirSwitched .= "/s". substr($hit[0],$position,2);
+					}
+					$seqToSeq->{$hit[0]}->{$hit[1]}++;
+				}
+				else # clean old data first
+				{
+					for (my $position = 0; $position < length($hit[0]); $position += 2)
+					{
+						$queryDir .= "/q". substr($hit[0],$position,2);
+						unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir")
 						{
 							mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir";
 						}
 					}
-
 					for (my $position = 0; $position < length($hit[1]); $position += 2)
 					{
 						$subjectDir .= "/s". substr($hit[1],$position,2);
-						until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir")
+						unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir")
 						{
 							mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir";
 						}
 					}
-
-					unlink "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl"; #delete old alignments
-					until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl")
-					{
-						open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl";
-						print ALN "#$alignEngine\_manual_loading\n";
-						print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
-						close(ALN);
-					}
+					open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl";
+					print ALN "#$alignEngine\_manual_loading\n";
+					print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
+					close(ALN);
 
 					for (my $position = 0; $position < length($hit[1]); $position += 2)
 					{
 						$queryDirSwitched .= "/q". substr($hit[1],$position,2);
-						until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched")
+						unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched")
 						{
 							mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched";
 						}
 					}
-
 					for (my $position = 0; $position < length($hit[0]); $position += 2)
 					{
 						$subjectDirSwitched .= "/s". substr($hit[0],$position,2);
-						until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched")
+						unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched")
 						{
 							mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched";
 						}
 					}
-
-					unlink "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl"; #delete old alignments
-					until (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl")
-					{
-						open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl";
-						print ALN "#$alignEngine\_manual_loading\n";
-						print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
-						close(ALN);
-					}
+					open (ALN,">$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl";
+					print ALN "#$alignEngine\_manual_loading\n";
+					print ALN "#query\tsubject\tperc_indentity\talign_length\tmismatches\tgaps\tq_start\tq_end\ts_start\ts_end\te_val\tbit_score\thidden\n";
+					close(ALN);
 					$seqToSeq->{$hit[0]}->{$hit[1]} = 1;
 				}
 
@@ -230,6 +253,25 @@ END
 					else
 					{
 						$setToSet->{$setId->{$hit[0]}}->{$setId->{$hit[1]}} = "alignments/seqToSeq$queryDir$subjectDir/$hit[0]-$hit[1].tbl";
+					}
+
+					if (exists $seqToSetSwitched->{$hit[1]}->{$setId->{$hit[0]}})
+					{
+						$seqToSetSwitched->{$hit[1]}->{$setId->{$hit[0]}} .= ",alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl";
+			
+					}
+					else
+					{
+						$seqToSetSwitched->{$hit[1]}->{$setId->{$hit[0]}} = "alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl";
+					}
+					if (exists $setToSetSwitched->{$setId->{$hit[1]}}->{$setId->{$hit[0]}})
+					{
+						$setToSetSwitched->{$setId->{$hit[1]}}->{$setId->{$hit[0]}} .= ",alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl";
+			
+					}
+					else
+					{
+						$setToSetSwitched->{$setId->{$hit[1]}}->{$setId->{$hit[0]}} = "alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[1]-$hit[0].tbl";
 					}
 				}
 				#write to alignment
@@ -263,34 +305,11 @@ END
 					$hit[1] = $hit[0];
 					$hit[0] = $exchange;
 				}
-
-				if ($seqToSeq->{$hit[1]}->{$hit[0]} == 1) #check if this is the first hit
-				{
-					if (exists $seqToSetSwitched->{$hit[0]}->{$setId->{$hit[1]}})
-					{
-						$seqToSetSwitched->{$hit[0]}->{$setId->{$hit[1]}} .= ",alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[0]-$hit[1].tbl";
-			
-					}
-					else
-					{
-						$seqToSetSwitched->{$hit[0]}->{$setId->{$hit[1]}} = "alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[0]-$hit[1].tbl";
-					}
-					if (exists $setToSetSwitched->{$setId->{$hit[0]}}->{$setId->{$hit[1]}})
-					{
-						$setToSetSwitched->{$setId->{$hit[0]}}->{$setId->{$hit[1]}} .= ",alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[0]-$hit[1].tbl";
-			
-					}
-					else
-					{
-						$setToSetSwitched->{$setId->{$hit[0]}}->{$setId->{$hit[1]}} = "alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[0]-$hit[1].tbl";
-					}
-				}
 				#write to alignment
 				open (ALN,">>$commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[0]-$hit[1].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDirSwitched$subjectDirSwitched/$hit[0]-$hit[1].tbl";
 				print ALN join "\t", @hit;
 				print ALN "\n";
 				close(ALN);
-				$seqToSeq->{$hit[0]}->{$hit[1]}++;
 			}
 			else
 			{
@@ -306,7 +325,7 @@ END
 			for (my $position = 0; $position < length($sequenceId); $position += 2)
 			{
 				$queryDirLocal .= "/q". substr($sequenceId,$position,2);
-				until (-e "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal")
+				unless (-e "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal")
 				{
 					mkdir "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal";
 				}
@@ -317,21 +336,17 @@ END
 				for (my $position = 0; $position < length($subjectSetId); $position += 2)
 				{
 					$subjectDirLocal .= "/s". substr($subjectSetId,$position,2);
-					until (-e "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal")
+					unless (-e "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal")
 					{
 						mkdir "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal";
 					}
 				}
-		
-				until (-e "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal/$sequenceId-$subjectSetId.list")
+				open (LIST,">$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal/$sequenceId-$subjectSetId.list") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal/$sequenceId-$subjectSetId.list";
+				foreach (split ",", $seqToSet->{$sequenceId}->{$subjectSetId})
 				{
-					open (LIST,">$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal/$sequenceId-$subjectSetId.list") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal/$sequenceId-$subjectSetId.list";
-					foreach (split ",", $seqToSet->{$sequenceId}->{$subjectSetId})
-					{
-						print LIST "$_\n";
-					}
-					close(LIST);
+					print LIST "$_\n";
 				}
+				close(LIST);
 			}
 		}
 
@@ -341,7 +356,7 @@ END
 			for (my $position = 0; $position < length($querySetId); $position += 2)
 			{
 				$queryDirLocal .= "/q". substr($querySetId,$position,2);
-				until (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal")
+				unless (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal")
 				{
 					mkdir "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal";
 				}
@@ -352,21 +367,17 @@ END
 				for (my $position = 0; $position < length($subjectSetId); $position += 2)
 				{
 					$subjectDirLocal .= "/s". substr($subjectSetId,$position,2);
-					until (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal")
+					unless (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal")
 					{
 						mkdir "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal";
 					}
 				}
-		
-				until (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal/$querySetId-$subjectSetId.list")
+				open (LIST,">$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal/$querySetId-$subjectSetId.list") or die "can't open file: $commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal/$querySetId-$subjectSetId.list";
+				foreach (split ",", $setToSet->{$querySetId}->{$subjectSetId})
 				{
-					open (LIST,">$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal/$querySetId-$subjectSetId.list") or die "can't open file: $commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal/$querySetId-$subjectSetId.list";
-					foreach (split ",", $setToSet->{$querySetId}->{$subjectSetId})
-					{
-						print LIST "$_\n";
-					}
-					close(LIST);
+					print LIST "$_\n";
 				}
+				close(LIST);
 			}
 		}
 
@@ -376,7 +387,7 @@ END
 			for (my $position = 0; $position < length($sequenceId); $position += 2)
 			{
 				$queryDirLocal .= "/q". substr($sequenceId,$position,2);
-				until (-e "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal")
+				unless (-e "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal")
 				{
 					mkdir "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal";
 				}
@@ -387,21 +398,17 @@ END
 				for (my $position = 0; $position < length($subjectSetId); $position += 2)
 				{
 					$subjectDirLocal .= "/s". substr($subjectSetId,$position,2);
-					until (-e "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal")
+					unless (-e "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal")
 					{
 						mkdir "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal";
 					}
 				}
-		
-				until (-e "$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal/$sequenceId-$subjectSetId.list")
+				open (LIST,">$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal/$sequenceId-$subjectSetId.list") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal/$sequenceId-$subjectSetId.list";
+				foreach (split ",", $seqToSetSwitched->{$sequenceId}->{$subjectSetId})
 				{
-					open (LIST,">$commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal/$sequenceId-$subjectSetId.list") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSet$queryDirLocal$subjectDirLocal/$sequenceId-$subjectSetId.list";
-					foreach (split ",", $seqToSetSwitched->{$sequenceId}->{$subjectSetId})
-					{
-						print LIST "$_\n";
-					}
-					close(LIST);
+					print LIST "$_\n";
 				}
+				close(LIST);
 			}
 		}
 
@@ -411,7 +418,7 @@ END
 			for (my $position = 0; $position < length($querySetId); $position += 2)
 			{
 				$queryDirLocal .= "/q". substr($querySetId,$position,2);
-				until (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal")
+				unless (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal")
 				{
 					mkdir "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal";
 				}
@@ -422,21 +429,17 @@ END
 				for (my $position = 0; $position < length($subjectSetId); $position += 2)
 				{
 					$subjectDirLocal .= "/s". substr($subjectSetId,$position,2);
-					until (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal")
+					unless (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal")
 					{
 						mkdir "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal";
 					}
 				}
-		
-				until (-e "$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal/$querySetId-$subjectSetId.list")
+				open (LIST,">$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal/$querySetId-$subjectSetId.list") or die "can't open file: $commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal/$querySetId-$subjectSetId.list";
+				foreach (split ",", $setToSetSwitched->{$querySetId}->{$subjectSetId})
 				{
-					open (LIST,">$commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal/$querySetId-$subjectSetId.list") or die "can't open file: $commoncfg->{DATADIR}/alignments/setToSet$queryDirLocal$subjectDirLocal/$querySetId-$subjectSetId.list";
-					foreach (split ",", $setToSetSwitched->{$querySetId}->{$subjectSetId})
-					{
-						print LIST "$_\n";
-					}
-					close(LIST);
+					print LIST "$_\n";
 				}
+				close(LIST);
 			}
 		}
 		exit 0;
