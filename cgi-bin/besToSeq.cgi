@@ -49,6 +49,7 @@ my $makeblastdb = 'blast+/bin/makeblastdb';
 my $libraryId = param ('libraryId') || '';
 my $targetId = param ('targetId') || '';
 my $alignEngine = param ('alignEngine') || 'blastn';
+my $redo = param ('redo') || '0';
 
 my $identityBesToSeq = param ('identityBesToSeq') || $userConfig->getFieldValueWithUserIdAndFieldName($userId,"BESTOSEQIDENTITY");
 my $minOverlapBesToSeq = param ('minOverlapBesToSeq') || $userConfig->getFieldValueWithUserIdAndFieldName($userId,"BESTOSEQMINOVERLAP");
@@ -73,6 +74,8 @@ END
 		#connect to the mysql server
 		my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 		my $setId;
+		my @queryIdList;
+		my @subjectIdList;
 
 		my $target=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 		$target->execute($targetId);
@@ -90,6 +93,7 @@ END
 				while(my @getSequences = $getSequences->fetchrow_array())
 				{
 					$setId->{$getSequences[0]} = $getSequences[4];
+					push @subjectIdList,$getSequences[0];
 					my $sequenceDetails = decode_json $getSequences[8];
 					my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
 					my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
@@ -109,6 +113,7 @@ END
 			while(my @getSequences = $getSequences->fetchrow_array())
 			{
 				$setId->{$getSequences[0]} = $getSequences[4];
+				push @subjectIdList,$getSequences[0];
 				my $sequenceDetails = decode_json $getSequences[8];
 				my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
 				my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
@@ -128,6 +133,7 @@ END
 		while(my @getBesSequences = $getBesSequences->fetchrow_array())
 		{
 			$setId->{$getBesSequences[0]} = $getBesSequences[4];
+			push @queryIdList,$getBesSequences[0];
 			my $sequenceDetails = decode_json $getBesSequences[8];
 			my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
 			my $in = Bio::SeqIO->new(-file => "$commoncfg->{DATADIR}/$sequenceDetails->{'sequence'}",
@@ -139,6 +145,38 @@ END
 			print BES ">$getBesSequences[0]\n$sequence\n";
 		}
 		close(BES);
+
+		if ($redo)
+		{
+			foreach my $querySequenceId (@queryIdList)
+			{
+				my $queryAsQueryDir;
+				for (my $position = 0; $position < length($querySequenceId); $position += 2)
+				{
+					$queryAsQueryDir .= "/q". substr($querySequenceId,$position,2);
+				}	
+				my $queryAsSubjectDir;
+				for (my $position = 0; $position < length($querySequenceId); $position += 2)
+				{
+					$queryAsSubjectDir .= "/s". substr($querySequenceId,$position,2);
+				}
+				foreach my $subjectSequenceId (@subjectIdList)
+				{
+					my $subjectAsQueryDir;
+					for (my $position = 0; $position < length($subjectSequenceId); $position += 2)
+					{
+						$subjectAsQueryDir .= "/q". substr($subjectSequenceId,$position,2);
+					}	
+					my $subjectAsSubjectDir;
+					for (my $position = 0; $position < length($subjectSequenceId); $position += 2)
+					{
+						$subjectAsSubjectDir .= "/s". substr($subjectSequenceId,$position,2);
+					}	
+					unlink("$commoncfg->{DATADIR}/alignments/seqToSeq$queryAsQueryDir$subjectAsSubjectDir/$querySequenceId-$subjectSequenceId.tbl") if (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryAsQueryDir$subjectAsSubjectDir/$querySequenceId-$subjectSequenceId.tbl");
+					unlink("$commoncfg->{DATADIR}/alignments/seqToSeq$subjectAsQueryDir$queryAsSubjectDir/$subjectSequenceId-$querySequenceId.tbl") if (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$subjectAsQueryDir$queryAsSubjectDir/$subjectSequenceId-$querySequenceId.tbl");
+				}
+			}
+		}
 
 		my $seqToSeq;
 		my $seqToSet;

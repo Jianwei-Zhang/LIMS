@@ -126,6 +126,7 @@ __DATA__
 	<table>
 	$queryGenomeId
 	$subjectGenomeId
+	<tr><td></td><td><input type="checkbox" id="alignmentRedo" name="redo" value="1" checked="checked"><label for="alignmentRedo">Override Existing Alignments</label></td></tr>
 	<tr><td style='text-align:right'><label for="alignEngine"><b>Alignment Engine</b></label></td><td style='text-align:left'><select class='ui-widget-content ui-corner-all' name="alignEngine" id="newAssemblyEngine"><option value="Customized">Customized</option><option value="blastn">blastn</option><option value="BLAT">BLAT</option></select></td></tr>
 	<tr><td style='text-align:right' rowspan='2'><label for="newAlignmentFile"><b>Alignment File</b></label></td><td><sup class="ui-state-error-text">Note: Sequence Id should contain no more than 32 characters.</sup><br><input name="alignmentFile" id="newAlignmentFile" type="file" />(in BLAST Tabular format)</td></tr>
 	<tr><td>or <input name="alignmentFilePath" id="newAlignmentFilePath" type="text" />(On-server file name with full path)</td></tr>

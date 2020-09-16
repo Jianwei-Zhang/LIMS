@@ -41,6 +41,7 @@ unless (-e "$commoncfg->{DATADIR}/alignments/setToSet")
 
 my $queryGenomeId = param ('queryGenomeId') || '';
 my $subjectGenomeId = param ('subjectGenomeId') || '';
+my $redo = param ('redo') || '0';
 my $alignEngine = param ('alignEngine') || 'blastn';
 my $alignmentFile = upload ('alignmentFile');
 my $alignmentFilePath = param ('alignmentFilePath') || '';
@@ -81,6 +82,8 @@ END
 		my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
 		my $setId;
+		my @queryIdList;
+		my @subjectIdList;
 		my $queryNameToId;
 		my $subjectNameToId;
 		my $queryGenome=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -98,6 +101,7 @@ END
 				{
 					$queryNameToId->{$getSequences[2]} = $getSequences[0];
 					$setId->{$getSequences[0]} = $getSequences[4];
+					push @queryIdList,$getSequences[0];
 				}
 			}
 		}
@@ -109,12 +113,14 @@ END
 			{
 				$queryNameToId->{$getSequences[2]} = $getSequences[0];
 				$setId->{$getSequences[0]} = $getSequences[4];
+				push @queryIdList,$getSequences[0];
 			}
 		}
 
 		if ($queryGenomeId eq $subjectGenomeId)
 		{
 			$subjectNameToId = $queryNameToId;
+			@subjectIdList = @queryIdList;
 		}
 		else
 		{
@@ -133,6 +139,7 @@ END
 					{
 						$subjectNameToId->{$getSequences[2]} = $getSequences[0];
 						$setId->{$getSequences[0]} = $getSequences[4];
+						push @subjectIdList,$getSequences[0];
 					}
 				}
 			}
@@ -144,6 +151,39 @@ END
 				{
 					$subjectNameToId->{$getSequences[2]} = $getSequences[0];
 					$setId->{$getSequences[0]} = $getSequences[4];
+					push @subjectIdList,$getSequences[0];
+				}
+			}
+		}
+
+		if ($redo)
+		{
+			foreach my $querySequenceId (@queryIdList)
+			{
+				my $queryAsQueryDir;
+				for (my $position = 0; $position < length($querySequenceId); $position += 2)
+				{
+					$queryAsQueryDir .= "/q". substr($querySequenceId,$position,2);
+				}	
+				my $queryAsSubjectDir;
+				for (my $position = 0; $position < length($querySequenceId); $position += 2)
+				{
+					$queryAsSubjectDir .= "/s". substr($querySequenceId,$position,2);
+				}
+				foreach my $subjectSequenceId (@subjectIdList)
+				{
+					my $subjectAsQueryDir;
+					for (my $position = 0; $position < length($subjectSequenceId); $position += 2)
+					{
+						$subjectAsQueryDir .= "/q". substr($subjectSequenceId,$position,2);
+					}	
+					my $subjectAsSubjectDir;
+					for (my $position = 0; $position < length($subjectSequenceId); $position += 2)
+					{
+						$subjectAsSubjectDir .= "/s". substr($subjectSequenceId,$position,2);
+					}	
+					unlink("$commoncfg->{DATADIR}/alignments/seqToSeq$queryAsQueryDir$subjectAsSubjectDir/$querySequenceId-$subjectSequenceId.tbl") if (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryAsQueryDir$subjectAsSubjectDir/$querySequenceId-$subjectSequenceId.tbl");
+					unlink("$commoncfg->{DATADIR}/alignments/seqToSeq$subjectAsQueryDir$queryAsSubjectDir/$subjectSequenceId-$querySequenceId.tbl") if (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$subjectAsQueryDir$queryAsSubjectDir/$subjectSequenceId-$querySequenceId.tbl");
 				}
 			}
 		}

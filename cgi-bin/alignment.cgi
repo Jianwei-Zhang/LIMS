@@ -56,6 +56,7 @@ my $numThreads = 16;
 
 my $queryGenomeId = param ('queryGenomeId') || '';
 my $subjectGenomeId = param ('subjectGenomeId') || '';
+my $redo = param ('redo') || '0';
 my $identityAlignment = param ('identityAlignment') || $userConfig->getFieldValueWithUserIdAndFieldName($userId,"SEQTOGNMIDENTITY");
 my $minOverlapAlignment = param ('minOverlapAlignment') || $userConfig->getFieldValueWithUserIdAndFieldName($userId,"SEQTOGNMMINOVERLAP");
 my $alignEngine = param ('alignEngine') || 'blastn';
@@ -86,6 +87,8 @@ END
 		#connect to the mysql server
 		my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 		my $setId;
+		my @queryIdList;
+		my @subjectIdList;
 		my $queryFile = "$commoncfg->{TMPDIR}/$queryGenomeId.$$.seq";
 		my $sequenceLength;
 
@@ -105,6 +108,7 @@ END
 				while(my @getSequences = $getSequences->fetchrow_array())
 				{
 					$setId->{$getSequences[0]} = $getSequences[4];
+					push @queryIdList,$getSequences[0];
 					$sequenceLength->{$getSequences[0]} = $getSequences[5];
 					my $sequenceDetails = decode_json $getSequences[8];
 					my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
@@ -126,6 +130,7 @@ END
 			while(my @getSequences = $getSequences->fetchrow_array())
 			{
 				$setId->{$getSequences[0]} = $getSequences[4];
+				push @queryIdList,$getSequences[0];
 				$sequenceLength->{$getSequences[0]} = $getSequences[5];
 				my $sequenceDetails = decode_json $getSequences[8];
 				my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
@@ -147,6 +152,7 @@ END
 		if($queryGenomeId eq $subjectGenomeId)
 		{
 			$subjectFile = $queryFile;
+			@subjectIdList = @queryIdList;
 		}
 		else
 		{
@@ -164,6 +170,7 @@ END
 					while(my @getSequences = $getSequences->fetchrow_array())
 					{
 						$setId->{$getSequences[0]} = $getSequences[4];
+						push @subjectIdList,$getSequences[0];
 						$sequenceLength->{$getSequences[0]} = $getSequences[5];
 						my $sequenceDetails = decode_json $getSequences[8];
 						my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
@@ -184,6 +191,7 @@ END
 				while(my @getSequences = $getSequences->fetchrow_array())
 				{
 					$setId->{$getSequences[0]} = $getSequences[4];
+					push @subjectIdList,$getSequences[0];
 					$sequenceLength->{$getSequences[0]} = $getSequences[5];
 					my $sequenceDetails = decode_json $getSequences[8];
 					my $sequence = 'ERROR: NO SEQUENCE FOUND! PLEASE CONTACT YOUR ADMINISTRATOR.';
@@ -198,6 +206,39 @@ END
 			}
 			close(SEQALL);
 		}
+
+		if ($redo)
+		{
+			foreach my $querySequenceId (@queryIdList)
+			{
+				my $queryAsQueryDir;
+				for (my $position = 0; $position < length($querySequenceId); $position += 2)
+				{
+					$queryAsQueryDir .= "/q". substr($querySequenceId,$position,2);
+				}	
+				my $queryAsSubjectDir;
+				for (my $position = 0; $position < length($querySequenceId); $position += 2)
+				{
+					$queryAsSubjectDir .= "/s". substr($querySequenceId,$position,2);
+				}
+				foreach my $subjectSequenceId (@subjectIdList)
+				{
+					my $subjectAsQueryDir;
+					for (my $position = 0; $position < length($subjectSequenceId); $position += 2)
+					{
+						$subjectAsQueryDir .= "/q". substr($subjectSequenceId,$position,2);
+					}	
+					my $subjectAsSubjectDir;
+					for (my $position = 0; $position < length($subjectSequenceId); $position += 2)
+					{
+						$subjectAsSubjectDir .= "/s". substr($subjectSequenceId,$position,2);
+					}	
+					unlink("$commoncfg->{DATADIR}/alignments/seqToSeq$queryAsQueryDir$subjectAsSubjectDir/$querySequenceId-$subjectSequenceId.tbl") if (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryAsQueryDir$subjectAsSubjectDir/$querySequenceId-$subjectSequenceId.tbl");
+					unlink("$commoncfg->{DATADIR}/alignments/seqToSeq$subjectAsQueryDir$queryAsSubjectDir/$subjectSequenceId-$querySequenceId.tbl") if (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$subjectAsQueryDir$queryAsSubjectDir/$subjectSequenceId-$querySequenceId.tbl");
+				}
+			}
+		}
+
 		if($alignEngine eq 'blastn')
 		{
 			if($softMasking)
