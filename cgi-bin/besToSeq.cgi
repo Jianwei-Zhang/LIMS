@@ -53,6 +53,7 @@ my $redo = param ('redo') || '0';
 
 my $identityBesToSeq = param ('identityBesToSeq') || $userConfig->getFieldValueWithUserIdAndFieldName($userId,"BESTOSEQIDENTITY");
 my $minOverlapBesToSeq = param ('minOverlapBesToSeq') || $userConfig->getFieldValueWithUserIdAndFieldName($userId,"BESTOSEQMINOVERLAP");
+my $numThreads = param ('numThreads') || '16';
 
 print header;
 
@@ -76,12 +77,15 @@ END
 		my $setId;
 		my @queryIdList;
 		my @subjectIdList;
+		my $outputFile = "$commoncfg->{TMPDIR}/$libraryId-$targetId.$$.tbl";
+		my $queryFile = "$commoncfg->{TMPDIR}/$libraryId.$$.bes";
+		my $subjectFile = "$commoncfg->{TMPDIR}/$targetId.$$.seq";
 
 		my $target=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 		$target->execute($targetId);
 		my @target = $target->fetchrow_array();
 
-		open (SEQALL,">$commoncfg->{TMPDIR}/$targetId.$$.seq") or die "can't open file: $commoncfg->{TMPDIR}/$targetId.$$.seq";
+		open (SEQALL,">$subjectFile") or die "can't open file: $subjectFile";
 		if($target[1] eq 'library')
 		{
 			my $getClones = $dbh->prepare("SELECT * FROM clones WHERE sequenced > 0 AND libraryId = ?");
@@ -127,7 +131,7 @@ END
 		}
 		close(SEQALL);
 
-		open (BES,">$commoncfg->{TMPDIR}/$libraryId.$$.bes") or die "can't open file: $commoncfg->{TMPDIR}/$libraryId.$$.bes";
+		open (BES,">$queryFile") or die "can't open file: $queryFile";
 		my $getBesSequences = $dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sequence' AND o = 98 AND x = ?");
 		$getBesSequences->execute($libraryId);
 		while(my @getBesSequences = $getBesSequences->fetchrow_array())
@@ -184,9 +188,11 @@ END
 		my $setToSet;
 		my $setToSetSwitched;
 
-		system( "$makeblastdb -in $commoncfg->{TMPDIR}/$targetId.$$.seq -dbtype nucl" );
-		open (CMD,"$alignEngineList->{$alignEngine} -query $commoncfg->{TMPDIR}/$libraryId.$$.bes -db $commoncfg->{TMPDIR}/$targetId.$$.seq -dust no -evalue 1e-200 -perc_identity $identityBesToSeq -num_threads 8 -outfmt 6 |") or die "can't open CMD: $!";
-		while(<CMD>)
+		system( "$makeblastdb -in $subjectFile -dbtype nucl" );
+		system("$alignEngineList->{$alignEngine} -query $queryFile -db $subjectFile -dust no -evalue 1e-200 -perc_identity $identityBesToSeq -num_threads $numThreads -outfmt 6 -out $outputFile");
+
+		open (TBL,"$outputFile") or die "can't open file: $outputFile";
+		while(<TBL>)
 		{
 			chop;
 			/^#/ and next;
@@ -339,12 +345,13 @@ END
 			close(ALN);
 			$seqToSeq->{$hit[1]}->{$hit[0]}++;
 		}
-		close(CMD);
-		unlink("$commoncfg->{TMPDIR}/$libraryId.$$.bes");
-		unlink("$commoncfg->{TMPDIR}/$targetId.$$.seq");
-		unlink("$commoncfg->{TMPDIR}/$targetId.$$.seq.nhr");
-		unlink("$commoncfg->{TMPDIR}/$targetId.$$.seq.nin");
-		unlink("$commoncfg->{TMPDIR}/$targetId.$$.seq.nsq");
+		close(TBL);
+		unlink("$outputFile") if (-e "$outputFile");
+		unlink("$queryFile") if (-e "$queryFile");
+		unlink("$subjectFile") if (-e "$subjectFile");
+		unlink("$subjectFile.nhr") if (-e "$subjectFile.nhr");
+		unlink("$subjectFile.nin") if (-e "$subjectFile.nin");
+		unlink("$subjectFile.nsq") if (-e "$subjectFile.nsq");
 
 		foreach my $sequenceId (keys %$seqToSet)
 		{

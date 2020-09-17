@@ -55,7 +55,7 @@ __DATA__
 <form id="besToSeq" name="besToSeq" action="besToSeq.cgi" enctype="multipart/form-data" method="post" target="hiddenFrame">
 	<table>
 	<tr><td style='text-align:left' colspan='2'><input name="libraryId" id="newLibraryId" type="hidden" value="$libraryId" />Align $libraryName BES to <select class='ui-widget-content ui-corner-all' name='targetId' id='newTargetId'>$targetId</select></td></tr>
-	<tr><td></td><td><input type="checkbox" id="newBesToSeqRedo" name="redo" value="1" checked="checked"><label for="newBesToSeqRedo">Override Existing Alignments</label></td></tr>
+	<tr><td style='text-align:right'><label for="besToSeqNumThreads"><b>Threads</b></label></td><td><input name="numThreads" id="besToSeqNumThreads" size="2" type="text" maxlength="4" VALUE="16" /> <input type="checkbox" id="newBesToSeqRedo" name="redo" value="1" checked="checked"><label for="newBesToSeqRedo">Override Existing Alignments</label></td></tr>
 	<tr><td style='text-align:right'><label for="besToSeqMinOverlap"><b>Minimum Overlap</b></label><br>(length in bp)</td><td><input name="minOverlapBesToSeq" id="besToSeqMinOverlap" size="4" type="text" maxlength="6" VALUE="$BESTOSEQMINOVERLAP" /></td></tr>
 	<tr><td style='text-align:right'><label for="besToSeqIdentity"><b>Minimum Identity</b></label><br>(%)</td><td><input name="identityBesToSeq" id="besToSeqIdentity" size="4" type="text" maxlength="4" VALUE="$BESTOSEQIDENTITY" /></td></tr>
 	</table>
@@ -63,6 +63,7 @@ __DATA__
 <script>
 $('#dialog').dialog("option", "title", "Run BES to SEQ Alignment");
 $( "#dialog" ).dialog( "option", "buttons", [{ text: "Run Alignment", click: function() { submitForm('besToSeq'); } }, { text: "Cancel", click: function() {closeDialog(); } } ] );
+$( "#besToSeqNumThreads" ).spinner({ min: 1, max: 32});
 $( "#besToSeqMinOverlap" ).spinner({
 	min: 200,
 	max: 1000,

@@ -141,7 +141,7 @@ __DATA__
 	$queryGenomeId
 	$subjectGenomeId
 	<tr><td></td><td><input type="checkbox" id="newAlignmentRedo" name="redo" value="1" checked="checked"><label for="newAlignmentRedo">Override Existing Alignments</label></td></tr>
-	<tr><td><b>Alignment Settings:</b></td><td style='text-align:left' colspan='2'><label for="alignEngine"><b>Engine</b></label> <select class='ui-widget-content ui-corner-all' name="alignEngine" id="newEngine"><option value="blastn">blastn</option><option value="BLAT">BLAT</option></select><br></td></tr>
+	<tr><td><b>Alignment Settings:</b></td><td style='text-align:left' colspan='2'><label for="alignEngine"><b>Engine</b></label> <select class='ui-widget-content ui-corner-all' name="alignEngine" id="newEngine"><option value="blastn">blastn</option><option value="BLAT">BLAT</option></select> <label for="newAlignmentNumThreads"><b>Threads</b></label><input name="numThreads" id="newAlignmentNumThreads" size="2" type="text" maxlength="4" VALUE="16" /></td></tr>
 	<tr><td></td><td style='text-align:left' colspan='2'>
 		<input type="checkbox" id="newMegablastCheckbox" name="megablast" value="megablast" checked="checked"><label for="newMegablastCheckbox">Megablast</label><br>
 		<input type="checkbox" id="newSoftMaskingCheckbox" name="softMasking" value="1"><label for="newSoftMaskingCheckbox">Soft Masking (blastn only)</label><br>
@@ -156,6 +156,7 @@ __DATA__
 <script>
 $('#dialog').dialog("option", "title", "Genome Alignment");
 $( "#dialog" ).dialog( "option", "buttons", [{ text: "Run Alignment", click: function() { submitForm('newAlignment'); } }, { text: "Cancel", click: function() {closeDialog(); } } ] );
+$( "#newAlignmentNumThreads" ).spinner({ min: 1, max: 32});
 $( "#newAlignmentMinOverlap" ).spinner({
 	min: 500,
 	max: 99999,

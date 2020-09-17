@@ -52,7 +52,6 @@ $alignEngineList->{'blastn'} = "blast+/bin/blastn";
 $alignEngineList->{'BLAT'} = "blat";
 my $windowmasker = 'blast+/bin/windowmasker';
 my $makeblastdb = 'blast+/bin/makeblastdb';
-my $numThreads = 16;
 
 my $queryGenomeId = param ('queryGenomeId') || '';
 my $subjectGenomeId = param ('subjectGenomeId') || '';
@@ -66,6 +65,7 @@ my $task = param ('megablast') || 'blastn';
 my $softMasking = param ('softMasking') || '0';
 my $markRepeatRegion = param ('markRepeatRegion') || '0';
 my $emailNotification = param ('emailNotification') || '0';
+my $numThreads = param ('numThreads') || '16';
 
 print header;
 
@@ -89,6 +89,7 @@ END
 		my $setId;
 		my @queryIdList;
 		my @subjectIdList;
+		my $outputFile = "$commoncfg->{TMPDIR}/$queryGenomeId-$subjectGenomeId.$$.tbl";
 		my $queryFile = "$commoncfg->{TMPDIR}/$queryGenomeId.$$.seq";
 		my $sequenceLength;
 
@@ -246,35 +247,27 @@ END
 				system( "$windowmasker -in $subjectFile -infmt fasta -mk_counts -parse_seqids -out $subjectFile.mask.counts" );
 				system( "$windowmasker -in $subjectFile -infmt fasta -ustat $subjectFile.mask.counts -outfmt maskinfo_asn1_bin -parse_seqids -out $subjectFile.mask.asnb" );
 				system( "$makeblastdb -in $subjectFile -inputtype fasta -dbtype nucl -parse_seqids -mask_data $subjectFile.mask.asnb" );
+				system("$alignEngineList->{$alignEngine} -query $queryFile -task $task -db $subjectFile -db_soft_mask 30 -evalue 1e-200 -perc_identity $identityAlignment -num_threads $numThreads -outfmt 6 -out $outputFile");
 			}
 			else
 			{
 				system( "$makeblastdb -in $subjectFile -dbtype nucl" );
+				system("$alignEngineList->{$alignEngine} -query $queryFile -task $task -db $subjectFile -evalue 1e-200 -perc_identity $identityAlignment -num_threads $numThreads -outfmt 6 -out $outputFile");
 			}
 		}
+		else
+		{
+			system("$alignEngineList->{$alignEngine} $subjectFile $queryFile -out=blast8 -minIdentity=$identityAlignment $outputFile");
+		}
+
 
 		my $seqToSeq;
 		my $seqToSet;
 		my $seqToSetSwitched;
 		my $setToSet;
 		my $setToSetSwitched;
-
-		if($alignEngine eq 'blastn')
-		{
-			if($softMasking)
-			{
-				open (CMD,"$alignEngineList->{$alignEngine} -query $queryFile -task $task -db $subjectFile -db_soft_mask 30 -evalue 1e-200 -perc_identity $identityAlignment -num_threads $numThreads -outfmt 6 |") or die "can't open CMD: $!";
-			}
-			else
-			{
-				open (CMD,"$alignEngineList->{$alignEngine} -query $queryFile -task $task -db $subjectFile -evalue 1e-200 -perc_identity $identityAlignment -num_threads $numThreads -outfmt 6 |") or die "can't open CMD: $!";
-			}
-		}
-		else
-		{
-			open (CMD,"$alignEngineList->{$alignEngine} $subjectFile $queryFile -out=blast8 -minIdentity=$identityAlignment |") or die "can't open CMD: $!";
-		}
-		while(<CMD>)
+		open(TBL, "$outputFile") or die "cannot open file $outputFile";
+		while(<TBL>)
 		{
 			chop;
 			/^#/ and next;
@@ -591,12 +584,13 @@ END
 				}
 			}
 		}
-		close(CMD);
-		unlink("$queryFile");
-		unlink("$subjectFile");
-		unlink("$subjectFile.nhr");
-		unlink("$subjectFile.nin");
-		unlink("$subjectFile.nsq");
+		close(TBL);
+		unlink("$outputFile") if (-e "$outputFile");
+		unlink("$queryFile") if (-e "$queryFile");
+		unlink("$subjectFile") if (-e "$subjectFile");
+		unlink("$subjectFile.nhr") if (-e "$subjectFile.nhr");
+		unlink("$subjectFile.nin") if (-e "$subjectFile.nin");
+		unlink("$subjectFile.nsq") if (-e "$subjectFile.nsq");
 		`rm $commoncfg->{TMPDIR}/*.aln.html`; #delete cached files
 
 		foreach my $queryId (keys %$seqToSeq)
