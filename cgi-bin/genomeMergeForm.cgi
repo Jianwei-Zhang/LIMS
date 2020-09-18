@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @genomeId = param ('itemId');
 my $genomes;
 for(@genomeId)
@@ -39,6 +36,8 @@ $genomeNameList = scrolling_list(-name=>'mergedGenomeId',
 -size=>1,
 -labels=>\%{$genomes}) if (keys %{$genomes});
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$genomeList/$genomeList/g;
 $html =~ s/\$genomeNameList/$genomeNameList/g;
 

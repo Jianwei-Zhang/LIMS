@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $active = 0;
 my $activeDetector = 0;
 my $cookieFreezer = cookie('freezer') || '';
@@ -66,7 +63,8 @@ else
 	exit;
 }
 
-
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$roomId/$roomId/g;
 $html =~ s/\$\$/$$/g; #plus extra id
 $html =~ s/\$button/$button/g;

@@ -22,10 +22,6 @@ my $role = $userDetail->{"role"};
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
-
 my $libraryId = param ('libraryId') || '';
 my $active = 0;
 my $activeDetector = 0;
@@ -135,6 +131,9 @@ if ($libraryId)
 		<td><div id='jobId$pool[0]'>$jobIds</div></td></tr>";
 	}
 	$pools .= "</tbody></table></div>\n" if ($pools);
+	
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$button/$button/g;
 	$html =~ s/\$plates/$plates/g;
 	$html =~ s/\$poolsPerPage/$poolsPerPage/g;

@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $asbProjectId = param ('asbProjectId') || '';
 
 my $asbProject = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -109,6 +106,8 @@ if($genome->rows > 0)
 my $toBeFilled = $col - ( $colCount % $col);
 $assemblyTargetIds .= ($toBeFilled < $col ) ? "<td>&nbsp;</td>" x $toBeFilled ."</tr></tbody></table>" : "</tbody></table>";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$asbProjectId/$asbProjectId/g;
 $html =~ s/\$asbProjectName/$asbProject[2]/g;
 $html =~ s/\$asbProjectDescription/$asbProject[8]/g;

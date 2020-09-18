@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %status = ( 1=>'Active', 0=>'Inactive' );
 my %serviceType = (
 	0=>'Other',
@@ -76,6 +73,8 @@ $serviceDetails->{'startDate'} = '' unless (exists $serviceDetails->{'startDate'
 $serviceDetails->{'endDate'} = '' unless (exists $serviceDetails->{'endDate'});
 $serviceDetails->{'comments'} = '' unless (exists $serviceDetails->{'comments'});
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$serviceId/$serviceId/g;
 $html =~ s/\$serviceName/$service[2]/g;
 my $serviceTypeList = '';

@@ -19,9 +19,6 @@ my $userConfig = new userConfig;
 my $BESTOSEQMINOVERLAP = $userConfig->getFieldValueWithUserIdAndFieldName($userId,"BESTOSEQMINOVERLAP");
 my $BESTOSEQIDENTITY = $userConfig->getFieldValueWithUserIdAndFieldName($userId,"BESTOSEQIDENTITY");
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $libraryId = param ('libraryId') || '';
 
 my $library=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -41,6 +38,8 @@ while (my @genomeList = $genomeList->fetchrow_array())
 		"<option value='$genomeList[0]'>$genomeList[2]</option>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$libraryId/$libraryId/g;
 $html =~ s/\$libraryName/$library[2]/g;
 $html =~ s/\$targetId/$targetId/g;

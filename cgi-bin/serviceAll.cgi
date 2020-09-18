@@ -28,9 +28,6 @@ eof
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %yesOrNo = ( 0=>'<span style="float: right;" class="ui-icon ui-icon-cancel" title="Not yet"></span>', 1=>'<span style="float: right;" class="ui-icon ui-icon-check" title="Paid"></span>' );
 my %status = ( 1=>'Active', 0=>'Inactive' );
 my %serviceType = (
@@ -182,6 +179,8 @@ unless($services)
 }
 $button .= "</div>\n";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$button/$button/g;
 $html =~ s/\$services/$services/g;
 $html =~ s/\$\$/$$/g;

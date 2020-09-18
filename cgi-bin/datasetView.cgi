@@ -22,9 +22,6 @@ my %datasetType = (
 	2=>'Picture'
 	);
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $datasetId = param ('datasetId') || '';
 my $dataset = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $dataset->execute($datasetId);
@@ -43,7 +40,8 @@ if ($dataset[6] > 0)
 	$relatedParent = "<a onclick='closeDialog();openDialog(\"itemView.cgi?itemId=$dataset[6]\")'>$relatedParentForDataset[2]</a> ";
 }
 
-
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$datasetId/$datasetId/g;
 $html =~ s/\$datasetName/$dataset[2]/g;
 $html =~ s/\$datasetType/$datasetType{$dataset[3]}/g;

@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $givenParentId = param ('parentId') || '';
 my $parentId = "<option class='ui-state-error-text' value='0'>None</option>";
 my $parentList=$dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'genebank'");# ORDER BY name
@@ -39,6 +36,8 @@ if($parentList->rows > 0)
 	}
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$parentId/$parentId/g;
 
 print header;

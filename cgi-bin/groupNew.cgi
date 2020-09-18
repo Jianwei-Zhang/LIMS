@@ -24,8 +24,6 @@ exit if ($role ne "admin");
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
 my $config = new config;
 my $userConfig = new userConfig;
 
@@ -80,6 +78,8 @@ foreach my $individualPermission (@$allPermissions)
 my $toBeFilledPermission = $colPermission - ( $colCountPermission % $colPermission);
 $groupPermissionIds .= ($toBeFilledPermission < $colPermission ) ? "<td>&nbsp;</td>" x $toBeFilledPermission ."</tr></tbody></table>" : "</tbody></table>";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$groupUserIds/$groupUserIds/g;
 $html =~ s/\$groupPermissionIds/$groupPermissionIds/g;
 $html =~ s/\$\$/$$/g;

@@ -16,16 +16,12 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $itemId = param ('itemId') || '';
 my $projectId = '';
 my $item = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $item->execute($itemId);
 my @item=$item->fetchrow_array();
 my $itemDetails = decode_json $item[8];
-
 
 my $parent=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $parent->execute($item[6]);
@@ -42,10 +38,8 @@ for (sort {$a <=> $b} keys %$itemDetails)
 				</tr>";
 }
 
-
 print header;
 print <<END;
-
 <form id="editItem" name="editItem" action="itemSave.cgi" enctype="multipart/form-data" method="post" target="hiddenFrame">
 	<input name="itemId" id="editItemId" type="hidden" value="$itemId" />
 	<table>

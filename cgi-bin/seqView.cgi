@@ -17,9 +17,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $seqId = param ('seqId') || '';
 
 my %seqType = (
@@ -157,6 +154,9 @@ if ($seqId)
 		$assemblyView .= "</ul>$assemblyViewTabs<div></td></tr>" if ($assemblyView);
 		$getSeq[2] = 'no name' unless ($getSeq[2]); 
 		$getSeq[5] = commify($getSeq[5]);
+		
+		undef $/;# enable slurp mode
+		my $html = <DATA>;
 		$html =~ s/\$seqId/$getSeq[0]/g;
 		$html =~ s/\$seqName/$getSeq[2]/g;
 		$html =~ s/\$seqType/$seqType{$getSeq[3]}/g;

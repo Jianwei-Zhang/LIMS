@@ -33,9 +33,6 @@ my %datasetType = (
 	2=>'Picture'
 	);
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $datasets = '';
 my $allDataset=$dbh->prepare("SELECT * FROM matrix WHERE container Like 'dataset'");
 $allDataset->execute();
@@ -78,10 +75,11 @@ unless($datasets)
 }
 $button .= "</div>\n";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$button/$button/g;
 $html =~ s/\$datasets/$datasets/g;
 $html =~ s/\$\$/$$/g;
-
 
 print header(-cookie=>cookie(-name=>'general',-value=>5));
 print $html;

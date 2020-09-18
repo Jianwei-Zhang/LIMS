@@ -15,15 +15,14 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $roomId = param ('roomId') || '';
 
 my $room = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $room->execute($roomId);
 my @room=$room->fetchrow_array();
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$roomId/$roomId/g;
 $html =~ s/\$roomName/$room[2]/g;
 $html =~ s/\$roomX/$room[4]/g;

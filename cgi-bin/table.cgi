@@ -28,8 +28,6 @@ eof
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
 my $type = param ('type') || '';
 my $parentId = param ('parentId') || '';
 my $refresh = param ('refresh') || 'menu';
@@ -126,10 +124,11 @@ unless($table)
 }
 $button .= "</div>\n";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$button/$button/g;
 $html =~ s/\$table/$table/g;
 $html =~ s/\$\$/$$/g;
-
 
 print header();
 print $html;

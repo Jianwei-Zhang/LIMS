@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $type = param ('type') || '';
 my $parentId = param ('parentId') || '';
 my $refresh = param ('refresh') || 'menu';
@@ -27,6 +24,8 @@ my $parent=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $parent->execute($parentId);
 my @parent = $parent->fetchrow_array();	
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$type/$type/g;
 $html =~ s/\$parentId/$parentId/g;
 $html =~ s/\$parentName/$parent[2]/g;

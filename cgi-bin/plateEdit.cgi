@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $plateId = param ('plateId') || '';
 my $plate = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $plate->execute($plateId);
@@ -29,6 +26,9 @@ my @plateToLibrary = $plateToLibrary->fetchrow_array();
 my $libraryToProject=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $libraryToProject->execute($plateToLibrary[5]);
 my @libraryToProject = $libraryToProject->fetchrow_array();
+
+undef $/;# enable slurp mode
+my $html = <DATA>;
 if($plateToLibrary[5])
 {
 	my $sourceLibrary=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");

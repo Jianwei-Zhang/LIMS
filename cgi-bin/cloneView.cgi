@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $cloneName = param ('cloneName') || '';
 
 my %seqType = (
@@ -106,8 +103,6 @@ if ($cloneName)
 		}
 		$fpcView .= "</ul>$fpcViewTabs<div>" if($fpcView ne 'None.');
 
-
-
 		my $sequenceList = "<table id='sequenceList$$' name='sequenceList$$' class='display'>
 				<thead>
 					<tr>
@@ -135,6 +130,9 @@ if ($cloneName)
 		}
 		$sequenceList .= "</tbody></table>";
 		$getClone[6] = ($getSequences->rows > 0) ? $sequenceList : 'None.';
+		
+		undef $/;# enable slurp mode
+		my $html = <DATA>;
 		$html =~ s/\$cloneName/$cloneName/g;
 		$html =~ s/\$originalClone/$originalClone/g;
 		$html =~ s/\$relatedClone/$relatedClone/g;

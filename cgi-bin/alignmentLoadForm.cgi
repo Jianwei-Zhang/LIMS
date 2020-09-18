@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $queryId = param ('queryId') || '';
 my $subjectId = param ('subjectId') || '';
 
@@ -115,6 +112,8 @@ END
 END
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$queryGenomeId/$queryGenomeId/g;
 $html =~ s/\$subjectGenomeId/$subjectGenomeId/g;
 

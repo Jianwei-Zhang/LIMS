@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %status = (
 	0=>'Na',
 	1=>'Status One',
@@ -84,6 +81,8 @@ while (my @smrtwellForPaclib = $smrtwellForPaclib->fetchrow_array())
 	$relatedSmrtwells .= "<li><a onclick='closeDialog();openDialog(\"smrtwellView.cgi?smrtwellId=$smrtwellForPaclib[0]\")' title='View'>SMRT Run $smrtrun[2] > $smrtwellForPaclib[2]</a> (Status:$smrtrunStatus{$smrtrun[7]})</li>";	
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$paclibId/$paclibId/g;
 $html =~ s/\$sampleId/$paclib[6]/g;
 $html =~ s/\$project/$serviceToProject[2]/g;

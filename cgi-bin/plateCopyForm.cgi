@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $libraryId = param ('libraryId') || '';
 
 my $library = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -39,6 +36,8 @@ for (sort {$a <=> $b} keys %{$allCopyNumber})
 	$newCopy = $_ + 1;
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$libraryId/$libraryId/g;
 $html =~ s/\$newCopy/$newCopy/g;
 $html =~ s/\$libraryName/$library[2]/g;

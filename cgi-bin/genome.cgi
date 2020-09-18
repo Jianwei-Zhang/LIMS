@@ -31,9 +31,6 @@ $objectComponent->{0} = "Unknown";
 $objectComponent->{1} = "Chr-Seq";
 $objectComponent->{2} = "Ctg-Seq";
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $genomes = '';
 my %yesOrNo = ( 0=>'No', 1=>'Yes' );
 my $allGenome=$dbh->prepare("SELECT * FROM matrix WHERE container Like 'genome'");
@@ -121,10 +118,11 @@ unless($genomes)
 }
 $button .= "</div>\n";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$button/$button/g;
 $html =~ s/\$genomes/$genomes/g;
 $html =~ s/\$\$/$$/g;
-
 
 print header(-cookie=>cookie(-name=>'general',-value=>4));
 print $html;

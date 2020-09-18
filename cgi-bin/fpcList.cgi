@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $fpcId = param ('fpcId') || '';
 my $fpcDetails = '';
 if ($fpcId)
@@ -67,6 +64,9 @@ if ($fpcId)
 		$colCount++;
     }
 	$fpcDetails .= "</ul>";
+	
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$fpcDetails/$fpcDetails/g;
 	$html =~ s/\$fpcId/$fpcId/g;
 

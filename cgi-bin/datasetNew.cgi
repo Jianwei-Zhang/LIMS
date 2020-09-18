@@ -22,9 +22,6 @@ my %datasetType = (
 	2=>'Picture'
 	);
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $givenParentId = param ('parentId') || '';
 my $parentId = "<option class='ui-state-error-text' value='0'>None</option>";
 my $parentList=$dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'genebank'");# ORDER BY name
@@ -51,6 +48,8 @@ foreach (sort {$a <=> $b} keys %datasetType)
 	$datasetTypeList .= "<option value='$_'>$datasetType{$_}</option>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$parentId/$parentId/g;
 $html =~ s/\$datasetType/$datasetTypeList/g;
 

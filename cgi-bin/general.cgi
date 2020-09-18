@@ -27,10 +27,10 @@ eof
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
+my $active = cookie('general') || 0;;
+
 undef $/;# enable slurp mode
 my $html = <DATA>;
-
-my $active = cookie('general') || 0;;
 $html =~ s/\$active/$active/;
 $html =~ s/\$commoncfg->{HTDOCS}/$commoncfg->{HTDOCS}/g;
 

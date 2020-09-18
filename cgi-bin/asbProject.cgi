@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $active = 0;
 my $activeDetector = 0;
 my $cookieAsbProjectContent = cookie('asbProjectContent') || '';
@@ -61,6 +58,8 @@ else
 
 $asbProjectContent .= "</ul></div>\n" if($asbProjectContent);
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$asbProjectId/$asbProjectId/g;
 $html =~ s/\$\$/$$/g;
 $html =~ s/\$button/$button/g;

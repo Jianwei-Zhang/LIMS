@@ -20,11 +20,9 @@ my $userName = $userDetail->{"userName"};
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 print header;
 my $assemblyId = param ('assemblyId') || '';
+
 
 if($assemblyId)
 {
@@ -42,6 +40,8 @@ if($assemblyId)
 END
 		exit;
 	}
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
     $html =~ s/\$\$/$$/g;
 	$html =~ s/\$assemblyId/$assemblyId/g;
 	$html =~ s/\$commoncfg->{HTDOCS}/$commoncfg->{HTDOCS}/g;

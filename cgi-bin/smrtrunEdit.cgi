@@ -16,8 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
 my %status = (
 	0=>'Initialized',
 	1=>'Started',
@@ -44,6 +42,8 @@ for (my $i = 1;$i <= $maxSmrtcell;$i++)
 	$smrtrunSmrtcell .= ($smrtrun[3] eq $i) ? "<option value='$i' selected>$i</option>" : "<option value='$i'>$i</option>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$smrtrunId/$smrtrunId/g;
 $html =~ s/\$smrtrunName/$smrtrun[2]/g;
 $html =~ s/\$smrtrunSmrtcell/$smrtrunSmrtcell/g;

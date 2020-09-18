@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @jobId = param('jobId');
 print header;
 unless(@jobId)
@@ -51,6 +48,8 @@ while (my @vectorList = $vectorList->fetchrow_array())
 	$vectorId .= "<option value='$vectorList[0]'>$vectorList[2]</option>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$jobList/$jobList/g;
 $html =~ s/\$vectorId/$vectorId/g;
 

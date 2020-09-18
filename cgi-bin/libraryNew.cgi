@@ -16,14 +16,13 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $projectId = param ('projectId') || '';
 my $project=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $project->execute($projectId);
 my @project = $project->fetchrow_array();
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$projectId/$projectId/g;
 $html =~ s/\$projectName/$project[2]/g;
 

@@ -15,15 +15,15 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $fpcId = param ('fpcId') || '';
 if ($fpcId)
 {
 	my $fpc=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 	$fpc->execute($fpcId);
 	my @fpc = $fpc->fetchrow_array();
+	
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$fpcId/$fpcId/g;
 	$html =~ s/\$fpcName/$fpc[2]/g;
 	$html =~ s/\$fpcVersion/$fpc[3]/g;

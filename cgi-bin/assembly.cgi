@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $targetId = param ('targetId') || '';
 my $cookieAssembly = cookie('assembly') || '';
 my $asbProjectContent = '';
@@ -44,6 +41,8 @@ else
 }
 my $collapsible = ($activeDetector > 1) ? 'true' : 'false'; 
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$assemblyList/$assemblyList/g;
 $html =~ s/\$asbProjectContent/$asbProjectContent/g;
 $html =~ s/\$\$/$$/g;

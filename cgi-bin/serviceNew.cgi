@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %status = ( 1=>'Active', 0=>'Inactive');
 my %serviceType = (
 	0=>'Other',
@@ -68,6 +65,8 @@ if($projectId)
 	my ($tdYear,$year,$month,$dayofmonth,$time)=split(/\s+/,$datetimeString);
 	my $autoStartDate = "$year-$month-$dayofmonth";
 
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$projectId/$projectId/g;
 	$html =~ s/\$projectName/$project[2]/g;
 	$html =~ s/\$serviceType/$serviceTypeList/g;

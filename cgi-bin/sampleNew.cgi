@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %purpose = (
 	0=>'General Item',
 	1=>'Sample for PacBio Library'
@@ -64,6 +61,8 @@ my $serviceToProject=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $serviceToProject->execute($service[6]);
 my @serviceToProject = $serviceToProject->fetchrow_array();
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$serviceId/$serviceId/g;
 $html =~ s/\$serviceName/$service[2]/g;
 $html =~ s/\$projectName/$serviceToProject[2]/g;

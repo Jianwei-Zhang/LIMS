@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $libraryId = param ('libraryId') || '';
 my %yesOrNo = ( 0=>'No', 1=>'Yes' );
 my %status = ( active=>'Active', inactive=>'Inactive', deleted=>'Deleted' );
@@ -274,6 +271,9 @@ if ($libraryId)
 	$button .= ($relatedFpc) ? $relatedFpc : "";
 	$button .= ($relatedGenome) ? $relatedGenome : "";
 	$button .= "</div>";
+	
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$button/$button/g;
 	$html =~ s/\$libraryId/$libraryId/g;
 	$html =~ s/\$\$/$$/g;

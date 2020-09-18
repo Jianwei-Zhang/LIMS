@@ -31,9 +31,6 @@ my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$co
 my $config = new config;
 my $RSDashboardURL = $config->getFieldValueWithFieldName("RSDashboardURL");
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %status = (
 	0=>'Initialized',
 	1=>'Started',
@@ -153,6 +150,8 @@ unless($smrtruns)
 }
 $button .= "</div>\n";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$button/$button/g;
 $html =~ s/\$smrtruns/$smrtruns/g;
 $html =~ s/\$\$/$$/g;

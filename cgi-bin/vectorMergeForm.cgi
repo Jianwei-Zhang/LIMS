@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @vectorId = param ('itemId');
 my $vectors;
 for(@vectorId)
@@ -39,6 +36,8 @@ $vectorNameList = scrolling_list(-name=>'vectorName',
 -size=>1,
 -labels=>\%{$vectors}) if (keys %{$vectors});
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$vectorList/$vectorList/g;
 $html =~ s/\$vectorNameList/$vectorNameList/g;
 

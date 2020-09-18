@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $serviceId = param ('serviceId') || '';
 my %yesOrNo = ( 0=>'No', 1=>'Yes' );
 my %status = ( 1=>'Active', 0=>'Inactive' );
@@ -103,6 +100,9 @@ if ($serviceId)
 					</ul>
 				</li>
 			</ul>";
+	
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$button/$button/g;
 
 	my $sampleInService=$dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'sample' AND z = ? ORDER BY o");

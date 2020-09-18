@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $genomeId = param ('genomeId') || '';
 my $genome = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $genome->execute($genomeId);
@@ -108,6 +105,8 @@ foreach (@sequenceLength)
 	}
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$genomeId/$genomeId/g;
 $html =~ s/\$genomeName/$genome[2]/g;
 if($genome[3] > 1)

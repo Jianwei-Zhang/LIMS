@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @itemId = param ('itemId');
 my $items;
 for(@itemId)
@@ -83,6 +80,8 @@ while (my @room = $room->fetchrow_array())
 	$plateLocation .= "</optgroup>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$itemList/$itemList/g;
 $html =~ s/\$plateLocation/$plateLocation/g;
 

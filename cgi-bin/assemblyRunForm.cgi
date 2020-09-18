@@ -25,9 +25,6 @@ $objectComponent->{0} = "Unknown";
 $objectComponent->{1} = "Chr-Seq";
 $objectComponent->{2} = "Ctg-Seq";
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 print header;
 
 my $assemblyId = param ('assemblyId') || '';
@@ -113,6 +110,8 @@ else
 	$refGenomeId = "<option class='ui-state-error-text' value='0'>No reference genome available</option>".$refGenomeId;
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$assemblyId/$assemblyId/g;
 $html =~ s/\$assemblyName/$assembly[2]/g;
 $html =~ s/\$fpcOrAgpId/$fpcOrAgpId/g;

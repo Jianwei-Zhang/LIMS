@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @itemId = param ('itemId');
 my $items;
 for(@itemId)
@@ -121,6 +118,8 @@ $itemList = checkbox_group(-name=>'items',
 -labels=>\%{$items},
 -columns=>3) if (keys %{$items});
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$itemList/$itemList/g;
 
 print header;

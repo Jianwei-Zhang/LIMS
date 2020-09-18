@@ -15,14 +15,13 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $libraryId = param ('libraryId') || '';
 my $library=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $library->execute($libraryId);
 my @library = $library->fetchrow_array();
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$libraryName/$library[2]/g;
 $html =~ s/\$libraryId/$libraryId/g;
 

@@ -16,13 +16,8 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @genotypeIdOne = param ('genotypeIdOne');
-
 my @genotypeIdTwo = param ('genotypeIdTwo');
-
 my @headerRows = ("genotype name");
 #my @headerRows = ("genotype name","Order number","DArT plate barcode","client plate barcode","well row position","well column position","sample comments");
 
@@ -170,6 +165,8 @@ print COMPARISON "<table width='100%'>\n$genotypes\n</table>";
 close (COMPARISON);
 `gzip -f $commoncfg->{TMPDIR}/genotypeComparison.$$.html`;
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$\$/$$/g;
 $html =~ s/\$genotypes/$genotypes/g;
 $html =~ s/\$commoncfg->{HTDOCS}/$commoncfg->{HTDOCS}/g;

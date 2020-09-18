@@ -22,9 +22,6 @@ my %datasetType = (
 	2=>'Picture'
 	);
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $dartId = param ('dartId') || '';
 my $dart = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $dart->execute($dartId);
@@ -143,9 +140,10 @@ my $button = "<ul id='dartInfoMenu$$' style='margin-top: .3em; width: 250px;'>
 		</li>
 	</ul>";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$dartId/$dartId/g;
 $html =~ s/\$dartName/$dart[2]/g;
-
 $html =~ s/\$snpNumber/$dart[3]/g;
 $html =~ s/\$genotypeNumber/$dart[4]/g;
 $dart[8] = escapeHTML($dart[8]);

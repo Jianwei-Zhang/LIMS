@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $libraryId = param ('libraryId') || '';
 my $noun = 'word';
 my $plateId;
@@ -42,6 +39,9 @@ my $libraryToProject=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $libraryToProject->execute($library[6]);
 my @libraryToProject = $libraryToProject->fetchrow_array();
 $maxNofPlates = 1 if ($library[5]);
+
+undef $/;# enable slurp mode
+my $html = <DATA>;
 if($library[5])
 {
 	my $sourceLibrary=$dbh->prepare("SELECT * FROM matrix WHERE id = $library[5]");

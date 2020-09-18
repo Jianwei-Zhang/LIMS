@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $dartId = param ('dartId') || '';
 my $dart = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $dart->execute($dartId);
@@ -28,9 +25,6 @@ my $dartStatus;
 $dartStatus->{0} = "not ";
 $dartStatus->{-1} = "is being ";
 $dartStatus->{1} = ($dart[3] > 1) ? ($dart[4] > 1) ? "$dart[3] SNPs and $dart[4] genotypes " : "$dart[3] SNPs and $dart[4] genotype " : ($dart[4] > 1) ? "$dart[3] SNP and $dart[4] genotypes " :"$dart[3] SNP and $dart[4] genotype ";
-
-$html =~ s/\$dartId/$dartId/g;
-$html =~ s/\$dartName/$dart[2]/g;
 
 my $genebankId = "<option class='ui-state-error-text' value='0'>None</option>";
 my $genebankList=$dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'genebank'");# ORDER BY name
@@ -53,6 +47,10 @@ if ($genebankList->rows > 0)
 	}
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
+$html =~ s/\$dartId/$dartId/g;
+$html =~ s/\$dartName/$dart[2]/g;
 $html =~ s/\$genebankId/$genebankId/g;
 $html =~ s/\$dartStatus/$dartStatus->{$dart[7]}/g;
 $html =~ s/\$dartDescription/$dart[8]/g;

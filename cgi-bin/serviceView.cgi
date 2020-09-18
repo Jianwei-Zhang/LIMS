@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $serviceId = param ('serviceId') || '';
 my %yesOrNo = ( 0=>'No', 1=>'Yes' );
 my %status = ( 1=>'Active', 0=>'Inactive');
@@ -113,6 +110,8 @@ if ($serviceId)
 		$relatedSamples .= "<li><a onclick='closeDialog();openDialog(\"sampleView.cgi?sampleId=$sampleInService[0]\")' title='View'>$sampleInService[2]-$sampleInService[4]</a></li>";	
 	}
 
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$serviceId/$serviceId/g;
 	$html =~ s/\$serviceName/$service[2]/g;
 	if($service[3] == 0)

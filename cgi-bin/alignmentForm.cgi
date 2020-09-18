@@ -19,9 +19,6 @@ my $userConfig = new userConfig;
 my $SEQTOGNMMINOVERLAP = $userConfig->getFieldValueWithUserIdAndFieldName($userId,"SEQTOGNMMINOVERLAP");
 my $SEQTOGNMIDENTITY = $userConfig->getFieldValueWithUserIdAndFieldName($userId,"SEQTOGNMIDENTITY");
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $queryId = param ('queryId') || '';
 my $subjectId = param ('subjectId') || '';
 
@@ -118,6 +115,8 @@ END
 END
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$queryGenomeId/$queryGenomeId/g;
 $html =~ s/\$subjectGenomeId/$subjectGenomeId/g;
 $html =~ s/\$SEQTOGNMMINOVERLAP/$SEQTOGNMMINOVERLAP/g;

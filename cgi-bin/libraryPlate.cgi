@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $libraryId = param ('libraryId') || '';
 my $tableHeader;
 my $plates = '';
@@ -110,6 +107,9 @@ if ($libraryId)
 			<button style='float: right; margin-top: -.4em; margin-right: .3em;' onclick='openDialog(\"plateNew.cgi?libraryId=$libraryId\")'>New plate</button>
 			<strong>No plate in this library.</strong></p>";
 	}
+	
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$libraryId/$libraryId/g;
 	$html =~ s/\$\$/$$/g;
 	$html =~ s/\$plates/$plates/g;

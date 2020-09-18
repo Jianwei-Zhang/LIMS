@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $noun = 'word';
 my $itemId = param ('itemId') || '';
 my $item=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -44,6 +41,9 @@ foreach (sort {$a <=> $b} keys %commentType)
 {
 	$commentType .= ($comment[4] == $_) ? "<option value='$_' selected>$commentType{$_}</option>" : "<option value='$_'>$commentType{$_}</option>";
 }
+
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$commentType/$commentType/g;
 $html =~ s/\$commentDescription/$commentDetails->{'description'}/g;
 $html =~ s/\$noun/$noun/g;

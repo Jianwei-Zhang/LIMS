@@ -20,8 +20,6 @@ my $config = new config;
 my $JOBURL = $config->getFieldValueWithFieldName("JOBURL");
 my $JOBREALTIME = $config->getFieldValueWithFieldName("JOBREALTIME");
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
 my $job;
 my $hiddenJob;
 my $assignedSequence;
@@ -207,10 +205,11 @@ unless($jobs)
 			<strong>No job, please create one!</strong></p>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$button/$button/g;
 $html =~ s/\$jobs/$jobs/g;
 $html =~ s/\$\$/$$/g;
-
 
 print header(-cookie=>cookie(-name=>'general',-value=>3));
 print $html;

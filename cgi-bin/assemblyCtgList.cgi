@@ -25,8 +25,6 @@ my $assemblyId = param ('assemblyId') || '';
 my $ctgListDetails;
 my $ctgListDetailsUnplaced;
 my $commentDetails;
-undef $/;# enable slurp mode
-my $html = <DATA>;
 if ($assemblyId)
 {
 	my $assembly=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -264,6 +262,8 @@ if ($assemblyId)
 	
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$\$/$$/g;
 $html =~ s/\$ctgListDetails/$ctgListDetails/g;
 $html =~ s/\$assemblyId/$assemblyId/g;

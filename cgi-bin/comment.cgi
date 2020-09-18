@@ -16,7 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
 my $itemId = param ('itemId') || '';
 my $item=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $item->execute($itemId);
@@ -55,7 +54,6 @@ if ($comment->rows > 0)
 	\$( "#dialog" ).dialog( "option", "buttons", [{ text: "Edit", click: function() { closeDialog();openDialog("commentEdit.cgi?itemId=$itemId"); } }, { text: "OK", click: function() {closeDialog(); } } ] );
 	</script>
 END
-
 }
 else
 {

@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $poolId = param ('poolId') || '';
 
 my $pool = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -25,11 +22,9 @@ $pool->execute($poolId);
 my @pool=$pool->fetchrow_array();
 $pool[8] = 'none.' unless($pool[8]);
 
-
 my $poolToLibrary = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $poolToLibrary->execute($pool[4]);
 my @poolToLibrary = $poolToLibrary->fetchrow_array();
-
 
 my $poolJobs = '';
 my $jobId=$dbh->prepare("SELECT * FROM link WHERE parent = ? AND type LIKE 'poolJob' ORDER BY child DESC");
@@ -49,6 +44,8 @@ while(my @poolClone = $poolClone->fetchrow_array())
 		"<div class='ui-state-disabled' style='float: left; margin-right: .7em;' title='Sequence unavailable'><span class='ui-icon ui-icon-cancel' style='float: left; margin-right: 0;'></span><a onclick='closeDialog();openDialog(\"cloneView.cgi?cloneName=$poolClone[1]\")'>$poolClone[1]</a></div>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$poolId/$poolId/g;
 $html =~ s/\$poolName/$pool[2]/g;
 $html =~ s/\$seqLibraryName/$poolToLibrary[2]/g;

@@ -27,9 +27,6 @@ eof
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $button = "<div class='ui-state-highlight ui-corner-all' style='padding: 0 .7em;'>
 	<h2>System tools</h2>
 	<button onclick='refresh(\"general\")'>Refresh</button>
@@ -37,9 +34,10 @@ my $button = "<div class='ui-state-highlight ui-corner-all' style='padding: 0 .7
 	<button class='ui-state-error-text' onclick='deleteItem(0,\"delTempFiles\")' title='Delete Cached Files'>Delete Cached Files</button>
 	</div>\n";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$button/$button/g;
 $html =~ s/\$\$/$$/g;
-
 
 print header(-cookie=>cookie(-name=>'general',-value=>7));
 print $html;

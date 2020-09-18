@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $col = 3;
 my $colCount=0;
 my $assemblyTargetIds = "<table id='assemblyTargetIds$$' class='display'><thead style='display:none;'><tr>" . "<th></th>" x $col . "</tr></thead><tbody>";
@@ -81,7 +78,8 @@ if($genome->rows > 0)
 my $toBeFilled = $col - ( $colCount % $col);
 $assemblyTargetIds .= ($toBeFilled < $col ) ? "<td>&nbsp;</td>" x $toBeFilled ."</tr></tbody></table>" : "</tbody></table>";
 
-
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$assemblyTargetIds/$assemblyTargetIds/g;
 $html =~ s/\$\$/$$/g;
 

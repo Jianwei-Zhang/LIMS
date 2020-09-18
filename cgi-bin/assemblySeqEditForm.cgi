@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $assemblySeqId = param ('assemblySeqId') || '';
 my $scrollLeft = param ('scrollLeft') || '0';
 
@@ -111,6 +108,8 @@ END
 		$gapType .= ($_ == $assemblySeq[4]) ? "<option value='$_' selected>$gapType{$_}</option>" : "<option value='$_'>$gapType{$_}</option>";
 	}
 
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$scrollLeft/$scrollLeft/g;
 	$html =~ s/\$assemblySeqId/$assemblySeqId/g;
 	$html =~ s/\$assemblySeqName/$assemblySeq[2]/g;

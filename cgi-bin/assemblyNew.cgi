@@ -19,9 +19,6 @@ my $objectComponent;
 $objectComponent->{0} = "Unknown";
 $objectComponent->{1} = "Chr-Seq";
 $objectComponent->{2} = "Ctg-Seq";
-
-undef $/;# enable slurp mode
-my $html = <DATA>;
 my $targetId = param ('targetId') || '';
 my $target=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $target->execute($targetId);
@@ -134,6 +131,8 @@ else
 my $toBeFilled = $col - ( $colCount % $col);
 $assemblyExtraIds .= ($toBeFilled < $col ) ? "<td>&nbsp;</td>" x $toBeFilled ."</tr></tbody></table>" : "</tbody></table>";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$targetId/$targetId/g;
 $html =~ s/\$assemblyName/$target[2]/g;
 $html =~ s/\$fpcOrAgpId/$fpcOrAgpId/g;

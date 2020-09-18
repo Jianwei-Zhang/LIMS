@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @genotypeIdOne = param ('genotypeIdOne');
 my @genotypeIdTwo = param ('genotypeIdTwo');
 push @genotypeIdOne, @genotypeIdTwo;
@@ -89,6 +86,8 @@ while (my @getSNPs = $getSNPs->fetchrow_array())
 close (GENOTYPE);
 `gzip -f $commoncfg->{TMPDIR}/genotype.$$.txt`;
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$\$/$$/g;
 $html =~ s/\$readyPhrase/$readyPhrase/g;
 $html =~ s/\$commoncfg->{HTDOCS}/$commoncfg->{HTDOCS}/g;

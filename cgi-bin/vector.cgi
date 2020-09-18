@@ -27,9 +27,6 @@ eof
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $vectors = '';
 my $allVector=$dbh->prepare("SELECT * FROM matrix WHERE container Like 'vector'");
 $allVector->execute();
@@ -83,6 +80,8 @@ unless($vectors)
 }
 $button .= "</div>\n";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$button/$button/g;
 $html =~ s/\$vectors/$vectors/g;
 $html =~ s/\$\$/$$/g;

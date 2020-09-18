@@ -17,9 +17,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $paclibId = param ('paclibId') || '';
 
 my %wellx = ( 96 => ['01' .. '12'], 384 =>['01' .. '24']);
@@ -129,6 +126,8 @@ for (my $i = 1;$i <= $maxSmrtcell;$i++)
 	$smrtrunSmrtcell .= ($i == 8) ? "<option value='$i' selected>$i</option>" : "<option value='$i'>$i</option>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$smrtrunId/$smrtrunIdList/g;
 $html =~ s/\$autoSmrtrunName/$autoSmrtrunName/g;
 $html =~ s/\$smrtrunSmrtcell/$smrtrunSmrtcell/g;

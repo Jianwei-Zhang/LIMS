@@ -26,8 +26,6 @@ eof
 
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
-undef $/;# enable slurp mode
-my $html = <DATA>;
 
 my $active = 0;
 my $activeDetector = 0;
@@ -53,6 +51,8 @@ if($project->rows > 0)
 	}
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$projects/$projects/;
 $html =~ s/\$active/$active/;
 $html =~ s/\$commoncfg->{HTDOCS}/$commoncfg->{HTDOCS}/g;

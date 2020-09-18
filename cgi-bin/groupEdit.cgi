@@ -28,10 +28,6 @@ my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$co
 my $config = new config;
 my $userConfig = new userConfig;
 
-
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $groupId = param ('groupId') || '';
 my $group = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $group->execute($groupId);
@@ -106,6 +102,8 @@ foreach my $individualPermission (@$allPermissions)
 my $toBeFilledPermission = $colPermission - ( $colCountPermission % $colPermission);
 $groupPermissionIds .= ($toBeFilledPermission < $colPermission ) ? "<td>&nbsp;</td>" x $toBeFilledPermission ."</tr></tbody></table>" : "</tbody></table>";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$groupId/$groupId/g;
 $html =~ s/\$groupName/$group[2]/g;
 $html =~ s/\$groupUserIds/$groupUserIds/g;

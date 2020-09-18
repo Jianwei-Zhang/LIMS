@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $active = 0;
 my $activeDetector = 0;
 my $cookieBox = cookie('box') || '';
@@ -65,6 +62,9 @@ else
 	print header(-type=>'text/html',-status=>'402 Invalid operation');
 	exit;
 }
+
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$freezerId/$freezerId/g;
 $html =~ s/\$\$/$$/g;
 $html =~ s/\$button/$button/g;

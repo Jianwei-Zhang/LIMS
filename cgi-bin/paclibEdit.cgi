@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %status = (
 	0=>'Na',
 	1=>'Status One',
@@ -41,10 +38,6 @@ $paclibDetails->{'bluepippinOutput'} = '' unless (exists $paclibDetails->{'bluep
 $paclibDetails->{'bluepippinConcentration'} = '' unless (exists $paclibDetails->{'bluepippinConcentration'});
 $paclibDetails->{'bluepippinOperator'} = '' unless (exists $paclibDetails->{'bluepippinOperator'});
 $paclibDetails->{'description'} = '' unless (exists $paclibDetails->{'description'});
-$html =~ s/\$bluepippinInput/$paclibDetails->{'bluepippinInput'}/g;
-$html =~ s/\$bluepippinSize/$paclibDetails->{'bluepippinSize'}/g;
-$html =~ s/\$bluepippinOutput/$paclibDetails->{'bluepippinOutput'}/g;
-$html =~ s/\$bluepippinConcentration/$paclibDetails->{'bluepippinConcentration'}/g;
 
 my $paclibStatus = '';
 foreach (sort {$a <=> $b} keys %status)
@@ -62,6 +55,8 @@ my $serviceToProject=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $serviceToProject->execute($sampleToService[6]);
 my @serviceToProject = $serviceToProject->fetchrow_array();
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$paclibId/$paclibId/g;
 $html =~ s/\$sampleId/$paclib[6]/g;
 $html =~ s/\$project/$serviceToProject[2]/g;

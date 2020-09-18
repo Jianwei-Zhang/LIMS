@@ -17,9 +17,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %status = (
 	0=>'Na',
 	1=>'Status One',
@@ -48,6 +45,8 @@ my $datetimeString = strftime "%y %Y %m %d %H:%M:%S", localtime;
 my ($tdYear,$year,$month,$dayofmonth,$time)=split(/\s+/,$datetimeString);
 my $autoPaclibDate = "$year-$month-$dayofmonth";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$sampleId/$sampleId/g;
 $html =~ s/\$sampleName/$sample[2]/g;
 $html =~ s/\$serviceName/$sampleToService[2]/g;

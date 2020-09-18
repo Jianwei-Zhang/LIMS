@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $poolId = param ('poolId') || '';
 
 my $pool = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -43,6 +40,8 @@ while(my @poolClone = $poolClone->fetchrow_array())
 	$poolClones .= "$poolClone[1]\n";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$poolId/$poolId/g;
 $html =~ s/\$poolName/$pool[2]/g;
 $html =~ s/\$seqLibraryName/$poolToLibrary[2]/g;

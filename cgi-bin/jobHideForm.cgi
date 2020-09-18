@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @jobId = param('jobId');
 print header;
 unless(@jobId)
@@ -43,6 +40,8 @@ $jobList = checkbox_group(-name=>'jobId',
 	-labels=>\%{$jobId},
 	-columns=>8) if (@jobId);
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$jobList/$jobList/g;
 
 print $html;

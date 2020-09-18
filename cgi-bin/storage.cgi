@@ -27,9 +27,6 @@ eof
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $active = 0;
 my $activeDetector = 0;
 my $cookieRoom = cookie('room') || '';
@@ -53,6 +50,9 @@ if($room->rows > 0)
 		$activeDetector++;
 	}
 }
+
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$rooms/$rooms/g;
 $html =~ s/\$active/$active/g;
 $html =~ s/\$commoncfg->{HTDOCS}/$commoncfg->{HTDOCS}/g;

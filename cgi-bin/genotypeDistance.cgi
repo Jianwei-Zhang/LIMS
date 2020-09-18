@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @genotypeIdOne = param ('genotypeIdOne');
 my @genotypeIdTwo = param ('genotypeIdTwo');
 push @genotypeIdOne, @genotypeIdTwo;
@@ -167,6 +164,8 @@ my $distances = $tableHead.$tableBody.$tableFoot;
 close (DISTANCE);
 `gzip -f $commoncfg->{TMPDIR}/genotypeDistance.$$.meg`;
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$\$/$$/g;
 $html =~ s/\$distances/$distances/g;
 $html =~ s/\$commoncfg->{HTDOCS}/$commoncfg->{HTDOCS}/g;

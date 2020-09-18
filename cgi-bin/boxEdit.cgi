@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $boxId = param ('boxId') || '';
 
 my $box = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -40,6 +37,8 @@ while (my @room = $room->fetchrow_array())
 	$boxFreezerId .= "</optgroup>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$boxId/$boxId/g;
 $html =~ s/\$boxName/$box[2]/g;
 $html =~ s/\$boxFreezerId/$boxFreezerId/g;

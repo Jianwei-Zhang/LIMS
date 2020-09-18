@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $libraryId = param ('libraryId') || '';
 my $library=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $library->execute($libraryId);
@@ -115,6 +112,8 @@ my $total = "<h3>Library '$library[2]' Sequencing Status</h3>
 		<b>Not Sequenced:</b> $totalNotSequenced ($notSequencedRate% of total)<br>
 		</p>";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$total/$total/g;
 $html =~ s/\$clones/$clones/g;
 $html =~ s/\$\$/$$/g;

@@ -16,8 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
 my $jobId = param ('jobId');
 
 my $oneJob;
@@ -247,6 +245,8 @@ END
 	</table>
 END
 
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$\$/$$/g;
 	$html =~ s/\$jobId/$jobId/g;
 	$html =~ s/\$jobDetail/$jobDetail/g;

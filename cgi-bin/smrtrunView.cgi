@@ -19,9 +19,6 @@ my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$co
 my $config = new config;
 my $RSDashboardURL = $config->getFieldValueWithFieldName("RSDashboardURL");
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $smrtrunId = param ('smrtrunId') || '';
 my %status = (
 	0=>'Initialized',
@@ -63,6 +60,8 @@ if ($smrtrunId)
 	}
 	my $RSDashboard = ($smrtrun[7])? "<a style='float: right;' href='$RSDashboardURL/Metrics/RSRunReport?instrument=&run=$smrtrun[2]&from=20000101-000000&to=20000101-000000' title='Go to RSDashboard' target='_blank'><span style='left: 0px;top: 0px;display:inline-block;' class='ui-icon ui-icon-extlink'></span>Go to RSDashboard</a>" : "";
 
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$smrtrunId/$smrtrunId/g;
 	$html =~ s/\$smrtrunName/$smrtrun[2]/g;
 	$html =~ s/\$smrtrunSmrtcell/$smrtrun[3]/g;

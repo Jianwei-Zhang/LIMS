@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $assemblyId = param ('assemblyId') || '';
 my $assembly=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $assembly->execute($assemblyId);
@@ -68,6 +65,8 @@ else
 	$assemblyExtraIds .= "None.</td></tr>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$assemblyId/$assemblyId/g;
 $html =~ s/\$assemblyName/$assembly[2]/g;
 $html =~ s/\$assemblyVersion/$assembly[3]/g;

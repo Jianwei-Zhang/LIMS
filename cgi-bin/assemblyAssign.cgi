@@ -33,9 +33,6 @@ END
 	exit;
 }
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @ctgId;
 my %ctg;
 my %chrName;
@@ -71,6 +68,8 @@ for my $ctgId (@ctgId)
 my $toBeFilled = $col - ( $colNumber % $col);
 $ctgList .= ($toBeFilled < $col ) ? "<td>&nbsp;</td>" x $toBeFilled ."</tr></tbody></table>" : "</tbody></table>";
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$ctgList/$ctgList/g;
 $html =~ s/\$assemblyId/$assemblyId/g;
 $html =~ s/\$commoncfg->{HTDOCS}/$commoncfg->{HTDOCS}/g;

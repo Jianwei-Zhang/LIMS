@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $active = 0;
 my $activeDetector = 0;
 my $cookieLibrary = cookie('library') || '';
@@ -89,6 +86,9 @@ else
 	print header(-type=>'text/html',-status=>'402 Invalid operation');
 	exit;
 }
+
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$projectId/$projectId/g;
 $html =~ s/\$\$/$$/g; #plus extra id
 $html =~ s/\$button/$button/g;

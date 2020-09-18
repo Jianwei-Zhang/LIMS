@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $boxId = param ('boxId') || '';
 my $button = "<div>";
 my $items = '';
@@ -98,6 +95,9 @@ if ($boxId)
 	}
 	$items .= "</tbody></table></form>\n" if($items);
 	$button .= "</div>";
+
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$boxId/$boxId/g;
 	$html =~ s/\$\$/$$/g;
 	$html =~ s/\$maxLoads/$maxLoads/g;

@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $roomId = param ('roomId') || '';
 my $freezerRoomId = '';
 my $room=$dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'room' ORDER BY o");
@@ -34,6 +31,8 @@ while (my @room = $room->fetchrow_array())
 	}
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$freezerRoomId/$freezerRoomId/g;
 
 print header;

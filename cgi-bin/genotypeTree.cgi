@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @genotypeIdOne = param ('genotypeIdOne');
 my @genotypeIdTwo = param ('genotypeIdTwo');
 push @genotypeIdOne, @genotypeIdTwo;
@@ -159,6 +156,8 @@ close (TREE);
 `gzip -f $commoncfg->{TMPDIR}/genotypeDistance.$$.out`;
 `gzip -f $commoncfg->{TMPDIR}/genotypeDistance.$$.tre`;
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$\$/$$/g;
 $html =~ s/\$outfile/$outfile/g;
 $html =~ s/\$tree/$tree/g;

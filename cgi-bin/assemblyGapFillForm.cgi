@@ -15,9 +15,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $assemblyId = param ('assemblyId') || '';
 my $assemblyCtgId = param ('assemblyCtgId') || '';
 my $ctgName = '';
@@ -34,6 +31,9 @@ $assembly->execute($assemblyId);
 my @assembly = $assembly->fetchrow_array();
 
 my $autoAssemblyCtgSearchUrl = 'autoAssemblyCtgSearch.cgi?assemblyId=$assemblyId';
+
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$autoAssemblyCtgSearchUrl/$autoAssemblyCtgSearchUrl/g;
 $html =~ s/\$assemblyId/$assemblyId/g;
 $html =~ s/\$assemblyName/$assembly[2]/g;

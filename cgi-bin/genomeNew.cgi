@@ -25,9 +25,6 @@ $objectComponent->{0} = "Unknown";
 $objectComponent->{1} = "Chr-Seq";
 $objectComponent->{2} = "Ctg-Seq";
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $libraryId = "<option class='ui-state-error-text' value='0'>None</option>";
 my $libraryList=$dbh->prepare("SELECT * FROM matrix WHERE container LIKE 'library'");# ORDER BY name
 $libraryList->execute();
@@ -52,6 +49,8 @@ for (sort keys %{$objectComponent})
 	$agpObjectComponent .= ($_ == 1) ? "<option value='$_' title='$objectComponent->{$_}' selected>$objectComponent->{$_}</option>" : "<option value='$_' title='$objectComponent->{$_}'>$objectComponent->{$_}</option>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$asbProjectId/$asbProjectId/g;
 $html =~ s/\$forAssembly/$forAssembly/g;
 $html =~ s/\$libraryId/$libraryId/g;

@@ -22,9 +22,6 @@ my %datasetType = (
 	2=>'Picture'
 	);
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $datasetId = param ('datasetId') || '';
 my $dataset = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $dataset->execute($datasetId);
@@ -34,9 +31,6 @@ my $datasetStatus;
 $datasetStatus->{0} = "not ";
 $datasetStatus->{-1} = "is being ";
 $datasetStatus->{1} = ($dataset[4] > 1) ? "$dataset[4] records " : "$dataset[4] record ";
-
-$html =~ s/\$datasetId/$datasetId/g;
-$html =~ s/\$datasetName/$dataset[2]/g;
 
 my $datasetTypeList = '';
 foreach (sort {$a <=> $b} keys %datasetType)
@@ -64,6 +58,10 @@ if($parentList->rows > 0)
 	}
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
+$html =~ s/\$datasetId/$datasetId/g;
+$html =~ s/\$datasetName/$dataset[2]/g;
 $html =~ s/\$parentId/$parentId/g;
 $html =~ s/\$datasetStatus/$datasetStatus->{$dataset[7]}/g;
 $html =~ s/\$datasetDescription/$dataset[8]/g;

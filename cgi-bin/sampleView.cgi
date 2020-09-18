@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %purpose = (
 	0=>'General Item',
 	1=>'Sample for PacBio Library'
@@ -86,6 +83,8 @@ if($sample[3] == 1) #for paclib
 	$relatedLibs = "<tr><td style='text-align:right'><label for='viewSamplePaclibs'><b>Related Paclibs</b></label></td><td><ul style='margin: 0;'>$relatedLibs</ul></td></tr>";
 }
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$sampleId/$sampleId/g;
 $html =~ s/\$project/$serviceToProject[2]/g;
 $html =~ s/\$serviceId/$sample[6]/g;

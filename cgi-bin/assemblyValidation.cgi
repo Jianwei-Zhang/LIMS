@@ -20,9 +20,6 @@ my $userName = $userDetail->{"userName"};
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 print header;
 my $assemblyId = param ('assemblyId') || '';
 my $validateDetail = '';
@@ -182,6 +179,8 @@ END
 	}
 
     #print "$assemblySeqWithoutCtg\n";
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
     $html =~ s/\$\$/$$/g;
 	$html =~ s/\$noSequenceNum/$noSequenceNum/g;
 	$html =~ s/\$noSequenceTab/$noSequenceTab/g;

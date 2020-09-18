@@ -29,9 +29,6 @@ eof
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my @itemId = param ('itemId');
 
 my $itemNumber = scalar (@itemId);
@@ -91,6 +88,8 @@ foreach (@itemId)
 close (RECORD);
 `gzip -f $commoncfg->{TMPDIR}/record.$$.txt`;
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$\$/$$/g;
 $html =~ s/\$readyPhrase/$readyPhrase/g;
 $html =~ s/\$commoncfg->{TMPURL}/$commoncfg->{TMPURL}/g;

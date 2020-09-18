@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my %purpose = (
 	0=>'General Item',
 	1=>'Sample for PacBio Library'
@@ -63,8 +60,6 @@ foreach (sort {$a <=> $b} keys %type)
 	$sampleTypeList .= ($sample[4] == $_) ? "<option value='$_' selected>$_. $type{$_}</option>" : "<option value='$_'>$_. $type{$_}</option>";
 }
 $sampleTypeList .= ($sample[4] == 0) ? "<option value='0' selected>$type{0}</option>" :  "<option value='0'>$type{0}</option>";
-$html =~ s/\$sampleTypeOther/$sampleDetails->{'sampleTypeOther'}/g;
-$html =~ s/\$sampleType/$sampleTypeList/g;
 
 my $sampleStatus = '';
 foreach (sort {$a <=> $b} keys %status)
@@ -78,6 +73,10 @@ my $serviceToProject=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $serviceToProject->execute($sampleToService[6]);
 my @serviceToProject = $serviceToProject->fetchrow_array();
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
+$html =~ s/\$sampleTypeOther/$sampleDetails->{'sampleTypeOther'}/g;
+$html =~ s/\$sampleType/$sampleTypeList/g;
 $html =~ s/\$sampleId/$sampleId/g;
 $html =~ s/\$projectName/$serviceToProject[2]/g;
 $html =~ s/\$serviceId/$sample[6]/g;

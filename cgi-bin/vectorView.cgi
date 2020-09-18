@@ -15,15 +15,13 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $vectorId = param ('vectorId') || '';
-
 my $vector = $dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 $vector->execute($vectorId);
 my @vector=$vector->fetchrow_array();
 
+undef $/;# enable slurp mode
+my $html = <DATA>;
 $html =~ s/\$vectorId/$vectorId/g;
 $html =~ s/\$vectorName/$vector[2]/g;
 $html =~ s/\$vectorBarcode/$vector[7]/g;

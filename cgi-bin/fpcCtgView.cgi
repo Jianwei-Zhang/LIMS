@@ -16,9 +16,6 @@ exit if (!$userId);
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $svg;
 my $fpcCtgId = param ('fpcCtgId') || '';
 my $highlight = param ('highlight') || '';
@@ -219,6 +216,9 @@ if ($fpcCtgId)
 	<div id='fpcCtgList$fpcCtgId$$'>
 	$graphic
 	</div>";
+
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$fpcCtgDetails/$fpcCtgDetails/g;
 	$html =~ s/\$dialogWidth/$dialogWidth/g;
 	$html =~ s/\$fpcCtgId/$fpcCtgId/g;

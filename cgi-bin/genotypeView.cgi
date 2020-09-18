@@ -22,9 +22,6 @@ my %datasetType = (
 	2=>'Picture'
 	);
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $genotypeId = param ('genotypeId') || '';
 my @headerRows = ("genotype name","Order number","DArT plate barcode","client plate barcode","well row position","well column position","sample comments");
 
@@ -109,6 +106,8 @@ if ($genotypeId)
 			$genotypes .= "<tr><td style='white-space: nowrap;' title='$snpDetailsLine'><b>$getSNPs[2]</b></td><td>$genotypeDetails->{$getSNPs[0]}</td></tr>";
 		}
 
+		undef $/;# enable slurp mode
+		my $html = <DATA>;
 		$html =~ s/\$\$/$$/g;
 		$html =~ s/\$genotypeId/$genotypeId/g;		
 		$html =~ s/\$genotypeName/$getGenotype[2]/g;

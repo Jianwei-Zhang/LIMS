@@ -25,9 +25,6 @@ my $userName = $userDetail->{"userName"};
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
 
-undef $/;# enable slurp mode
-my $html = <DATA>;
-
 my $assemblyId = param ('assemblyId') || '';
 my $assemblyStatus;
 $assemblyStatus->{2} = "Frozen";
@@ -745,6 +742,9 @@ END
 	</table><hr>
 	<h3>Run Logs</h3>$assemblyDetails->{'log'}</div> $assemblySortableStyle</div>
 END
+
+	undef $/;# enable slurp mode
+	my $html = <DATA>;
 	$html =~ s/\$assemblyList/$assemblyList/g;
 	$html =~ s/\$assemblyId/$assemblyId/g;
 	$html =~ s/\$assemblySortableJs/$assemblySortableJs/g;
