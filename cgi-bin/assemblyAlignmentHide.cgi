@@ -64,6 +64,17 @@ if($alignmentId)
 	close(NEW);
 	unlink("$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].tbl");
 	rename("$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].new", "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$alignmentId[0]-$alignmentId[1].tbl");
+	if(-e "$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir") #delete cached alignment files
+	{
+		opendir(TMPTBLDIR, "$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir") or die "can't opendir $commoncfg->{DATADIR}/alignments$queryDir$subjectDir";
+		my @files = readdir(TMPTBLDIR);
+		closedir TMPTBLDIR;
+		foreach my $file (sort @files)
+		{
+			next if ($file =~ /^\./);
+			unlink ("$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir/$file");
+		}
+	}
 
 	if($openAssemblyId)
 	{
