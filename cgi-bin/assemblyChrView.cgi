@@ -16,6 +16,11 @@ exit if (!$userId);
 
 my $commoncfg = readConfig("main.conf");
 my $dbh=DBI->connect("DBI:mysql:$commoncfg->{DATABASE}:$commoncfg->{DBHOST}",$commoncfg->{USERNAME},$commoncfg->{PASSWORD});
+## alignments will be cached to $commoncfg->{TMPDIR}/alignments
+unless (-e "$commoncfg->{TMPDIR}/alignments")
+{
+	mkdir "$commoncfg->{TMPDIR}/alignments";
+}
 
 my $svg;
 my $assemblyId = param ('assemblyId') || '';
@@ -583,60 +588,122 @@ if ($assemblyId && $chr)
 				for (my $position = 0; $position < length($companionAssemblySequenceId->{$currentSeq}); $position += 2)
 				{
 					$queryDir .= "/q". substr($companionAssemblySequenceId->{$currentSeq},$position,2);
+					unless (-e "$commoncfg->{TMPDIR}/alignments$queryDir")
+					{
+						mkdir "$commoncfg->{TMPDIR}/alignments$queryDir";
+					}			
 				}
 				my $subjectDir;
 				for (my $position = 0; $position < length($refGenomeSequence[0]); $position += 2)
 				{
-					$subjectDir .= "/s". substr($refGenomeSequence[0],$position,2);
+					$subjectDir .= "/s". substr($refGenomeSequence[0],$position,2);		
+					unless (-e "$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir")
+					{
+						mkdir "$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir";
+					}				
 				}
 				if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl")
 				{
 					my $alignmentCount = 0;
-					open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl";
-					while(<TBL>)
+					if(-e "$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].$alignmentLength.tbl")
 					{
-						chop;
-						/^#/ and next;
-						$alignmentCount++;
-						my @alignments = split("\t",$_);
-						next if ($alignments[12] > 0);
-						next if ($alignments[3] < $alignmentLength); #skip if alignment shorter than alignmentLength
-						my $seqXOne = 0;
-						my $seqXTwo = 0;
-						if($companionAssemblySeqOrient->{$currentSeq} eq "+")
+						open (TBL,"$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].$alignmentLength.tbl") or die "can't open file: $commoncfg->{TMPDIR}/alignments$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].$alignmentLength.tbl";
+						while(<TBL>)
 						{
-							$seqXOne = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqLeftEnd->{$currentSeq} + $alignments[6] - 1) / $pixelUnit;
-							$seqXTwo = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqLeftEnd->{$currentSeq} + $alignments[7] - 1) / $pixelUnit;
-						}
-						else
-						{
-							$seqXOne = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqRightEnd->{$currentSeq} - $alignments[6] + 1) / $pixelUnit;
-							$seqXTwo = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqRightEnd->{$currentSeq} - $alignments[7] + 1) / $pixelUnit;
-						}
-						my $refXOne = $margin + ($alignments[8] - 1 ) / $pixelUnit;;
-						my $refXTwo = $margin + ($alignments[9] - 1 ) / $pixelUnit;
+							chop;
+							my @alignments = split("\t",$_);
+							$alignmentCount = $alignments[13];
+							my $seqXOne = 0;
+							my $seqXTwo = 0;
+							if($companionAssemblySeqOrient->{$currentSeq} eq "+")
+							{
+								$seqXOne = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqLeftEnd->{$currentSeq} + $alignments[6] - 1) / $pixelUnit;
+								$seqXTwo = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqLeftEnd->{$currentSeq} + $alignments[7] - 1) / $pixelUnit;
+							}
+							else
+							{
+								$seqXOne = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqRightEnd->{$currentSeq} - $alignments[6] + 1) / $pixelUnit;
+								$seqXTwo = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqRightEnd->{$currentSeq} - $alignments[7] + 1) / $pixelUnit;
+							}
+							my $refXOne = $margin + ($alignments[8] - 1 ) / $pixelUnit;;
+							my $refXTwo = $margin + ($alignments[9] - 1 ) / $pixelUnit;
 
-						my $xv = [$seqXOne,$seqXTwo,$refXTwo,$refXOne];
-						my $yv = [$ctgBarY + $barHeight + 1,$ctgBarY + $barHeight + 1,$barY + $spaceForCompanion - 1,$barY + $spaceForCompanion - 1];
-						my $points = $companionAssemblyChrSeqAlignment->get_path(
-							x=>$xv,
-							y=>$yv,
-							-type=>'polygon'
-						);
-						$companionAssemblyChrSeqAlignment->polygon(
-							%$points,
-							id=>'companionAln'.$alignments[0].$alignments[1].$alignmentCount,
-							onclick => "closeDialog();openDialog('alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount')",
-							class=>'hasmenuForAlignment',
-							style=>{ stroke => 'red',
-								fill => 'yellow',
-								opacity => 0.5
-								},
-							'hide-url' => "assemblyAlignmentHide.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&assemblyId=$companionAssemblyId&openAssemblyId=$assemblyId&chr=$chr&scrollLeft=$seqXOne",
-							'view-url' => "alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount"
-						);
+							my $xv = [$seqXOne,$seqXTwo,$refXTwo,$refXOne];
+							my $yv = [$ctgBarY + $barHeight + 1,$ctgBarY + $barHeight + 1,$barY + $spaceForCompanion - 1,$barY + $spaceForCompanion - 1];
+							my $points = $companionAssemblyChrSeqAlignment->get_path(
+								x=>$xv,
+								y=>$yv,
+								-type=>'polygon'
+							);
+							$companionAssemblyChrSeqAlignment->polygon(
+								%$points,
+								id=>'companionAln'.$alignments[0].$alignments[1].$alignmentCount,
+								onclick => "closeDialog();openDialog('alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount')",
+								class=>'hasmenuForAlignment',
+								style=>{ stroke => 'red',
+									fill => 'yellow',
+									opacity => 0.5
+									},
+								'hide-url' => "assemblyAlignmentHide.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&assemblyId=$companionAssemblyId&openAssemblyId=$assemblyId&chr=$chr&scrollLeft=$seqXOne",
+								'view-url' => "alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount"
+							);
+						}
+						close(TBL);
 					}
-					close(TBL);
+					else
+					{
+						open (TMPTBL,">$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].$alignmentLength.tbl") or die "can't open file: $commoncfg->{TMPDIR}/alignments$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].$alignmentLength.tbl";
+						open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$companionAssemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl";
+						while(<TBL>)
+						{
+							chop;
+							/^#/ and next;
+							$alignmentCount++;
+							my @alignments = split("\t",$_);
+							$alignments[13] = $alignmentCount;							
+							next if ($alignments[12] > 0);
+							next if ($alignments[3] < $alignmentLength); #skip if alignment shorter than alignmentLength
+							print TMPTBL join "\t", @alignments;
+							print TMPTBL "\n";
+
+							my $seqXOne = 0;
+							my $seqXTwo = 0;
+							if($companionAssemblySeqOrient->{$currentSeq} eq "+")
+							{
+								$seqXOne = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqLeftEnd->{$currentSeq} + $alignments[6] - 1) / $pixelUnit;
+								$seqXTwo = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqLeftEnd->{$currentSeq} + $alignments[7] - 1) / $pixelUnit;
+							}
+							else
+							{
+								$seqXOne = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqRightEnd->{$currentSeq} - $alignments[6] + 1) / $pixelUnit;
+								$seqXTwo = $margin + ($companionAssemblyCtgList[6] + $companionAssemblySeqRightEnd->{$currentSeq} - $alignments[7] + 1) / $pixelUnit;
+							}
+							my $refXOne = $margin + ($alignments[8] - 1 ) / $pixelUnit;;
+							my $refXTwo = $margin + ($alignments[9] - 1 ) / $pixelUnit;
+
+							my $xv = [$seqXOne,$seqXTwo,$refXTwo,$refXOne];
+							my $yv = [$ctgBarY + $barHeight + 1,$ctgBarY + $barHeight + 1,$barY + $spaceForCompanion - 1,$barY + $spaceForCompanion - 1];
+							my $points = $companionAssemblyChrSeqAlignment->get_path(
+								x=>$xv,
+								y=>$yv,
+								-type=>'polygon'
+							);
+							$companionAssemblyChrSeqAlignment->polygon(
+								%$points,
+								id=>'companionAln'.$alignments[0].$alignments[1].$alignmentCount,
+								onclick => "closeDialog();openDialog('alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount')",
+								class=>'hasmenuForAlignment',
+								style=>{ stroke => 'red',
+									fill => 'yellow',
+									opacity => 0.5
+									},
+								'hide-url' => "assemblyAlignmentHide.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&assemblyId=$companionAssemblyId&openAssemblyId=$assemblyId&chr=$chr&scrollLeft=$seqXOne",
+								'view-url' => "alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount"
+							);
+						}
+						close(TBL);
+						close(TMPTBL);
+					}
 				}
 				$preSeq = $currentSeq;
 				$hiddenSeqCount = 0;
@@ -1008,65 +1075,126 @@ if ($assemblyId && $chr)
 				'view-url' => "seqView.cgi?seqId=$assemblySequenceId->{$currentSeq}"
 			)->cdata($seqLabel) if ($assemblySeqLength->{$currentSeq} / $pixelUnit > $seqLabelLength * $textFontWidth);
 
-
 			my $queryDir;
 			for (my $position = 0; $position < length($assemblySequenceId->{$currentSeq}); $position += 2)
 			{
 				$queryDir .= "/q". substr($assemblySequenceId->{$currentSeq},$position,2);
+				unless (-e "$commoncfg->{TMPDIR}/alignments$queryDir")
+				{
+					mkdir "$commoncfg->{TMPDIR}/alignments$queryDir";
+				}
 			}
 			my $subjectDir;
 			for (my $position = 0; $position < length($refGenomeSequence[0]); $position += 2)
 			{
 				$subjectDir .= "/s". substr($refGenomeSequence[0],$position,2);
+				unless (-e "$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir")
+				{
+					mkdir "$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir";
+				}				
 			}
 			if (-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl")
 			{
 				my $alignmentCount = 0;
-				open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl";
-				while(<TBL>)
+				if(-e "$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].$alignmentLength.tbl")
 				{
-					chop;
-					/^#/ and next;
-					$alignmentCount++;
-					my @alignments = split("\t",$_);
-					next if ($alignments[12] > 0);
-					next if ($alignments[3] < $alignmentLength); #skip if alignment shorter than alignmentLength
-					my $seqXOne = 0;
-					my $seqXTwo = 0;
-					if($assemblySeqOrient->{$currentSeq} eq "+")
+					open (TBL,"$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].$alignmentLength.tbl") or die "can't open file: $commoncfg->{TMPDIR}/alignments$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].$alignmentLength.tbl";
+					while(<TBL>)
 					{
-						$seqXOne = $margin + ($assemblyCtgList[6] + $assemblySeqLeftEnd->{$currentSeq} + $alignments[6] - 1) / $pixelUnit;
-						$seqXTwo = $margin + ($assemblyCtgList[6] + $assemblySeqLeftEnd->{$currentSeq} + $alignments[7] - 1) / $pixelUnit;
-					}
-					else
-					{
-						$seqXOne = $margin + ($assemblyCtgList[6] + $assemblySeqRightEnd->{$currentSeq} - $alignments[6] + 1) / $pixelUnit;
-						$seqXTwo = $margin + ($assemblyCtgList[6] + $assemblySeqRightEnd->{$currentSeq} - $alignments[7] + 1) / $pixelUnit;
-					}
-					my $refXOne = $margin + ($alignments[8] - 1 ) / $pixelUnit;;
-					my $refXTwo = $margin + ($alignments[9] - 1 ) / $pixelUnit;
+						chop;
+						my @alignments = split("\t",$_);
+						$alignmentCount = $alignments[13];
+						my $seqXOne = 0;
+						my $seqXTwo = 0;
+						if($assemblySeqOrient->{$currentSeq} eq "+")
+						{
+							$seqXOne = $margin + ($assemblyCtgList[6] + $assemblySeqLeftEnd->{$currentSeq} + $alignments[6] - 1) / $pixelUnit;
+							$seqXTwo = $margin + ($assemblyCtgList[6] + $assemblySeqLeftEnd->{$currentSeq} + $alignments[7] - 1) / $pixelUnit;
+						}
+						else
+						{
+							$seqXOne = $margin + ($assemblyCtgList[6] + $assemblySeqRightEnd->{$currentSeq} - $alignments[6] + 1) / $pixelUnit;
+							$seqXTwo = $margin + ($assemblyCtgList[6] + $assemblySeqRightEnd->{$currentSeq} - $alignments[7] + 1) / $pixelUnit;
+						}
+						my $refXOne = $margin + ($alignments[8] - 1 ) / $pixelUnit;;
+						my $refXTwo = $margin + ($alignments[9] - 1 ) / $pixelUnit;
 
-					my $xv = [$seqXOne,$seqXTwo,$refXTwo,$refXOne];
-					my $yv = [$ctgBarY - 1,$ctgBarY - 1,$barY + $barHeight + $spaceForCompanion + 1,$barY + $barHeight + $spaceForCompanion + 1];
-					my $points = $assemblyChrSeqAlignment->get_path(
-						x=>$xv,
-						y=>$yv,
-						-type=>'polygon'
-					);
-					$assemblyChrSeqAlignment->polygon(
-						%$points,
-						id=>'aln'.$alignments[0].$alignments[1].$alignmentCount,
-						onclick => "closeDialog();openDialog('alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount')",
-						class=>'hasmenuForAlignment',
-						style=>{ stroke => 'red',
-							fill => 'yellow',
-							opacity => 0.5
-							},
-						'hide-url' => "assemblyAlignmentHide.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&assemblyId=$assemblyId&chr=$chr&scrollLeft=$seqXOne",
-						'view-url' => "alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount"
-					);
+						my $xv = [$seqXOne,$seqXTwo,$refXTwo,$refXOne];
+						my $yv = [$ctgBarY - 1,$ctgBarY - 1,$barY + $barHeight + $spaceForCompanion + 1,$barY + $barHeight + $spaceForCompanion + 1];
+						my $points = $assemblyChrSeqAlignment->get_path(
+							x=>$xv,
+							y=>$yv,
+							-type=>'polygon'
+						);
+						$assemblyChrSeqAlignment->polygon(
+							%$points,
+							id=>'aln'.$alignments[0].$alignments[1].$alignmentCount,
+							onclick => "closeDialog();openDialog('alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount')",
+							class=>'hasmenuForAlignment',
+							style=>{ stroke => 'red',
+								fill => 'yellow',
+								opacity => 0.5
+								},
+							'hide-url' => "assemblyAlignmentHide.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&assemblyId=$assemblyId&chr=$chr&scrollLeft=$seqXOne",
+							'view-url' => "alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount"
+						);
+					}
+					close(TBL);
 				}
-				close(TBL);
+				else
+				{
+					open (TMPTBL,">$commoncfg->{TMPDIR}/alignments$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].$alignmentLength.tbl") or die "can't open file: $commoncfg->{TMPDIR}/alignments$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].$alignmentLength.tbl";
+					open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$assemblySequenceId->{$currentSeq}-$refGenomeSequence[0].tbl";
+					while(<TBL>)
+					{
+						chop;
+						/^#/ and next;
+						$alignmentCount++;
+						my @alignments = split("\t",$_);
+						$alignments[13] = $alignmentCount;
+						next if ($alignments[12] > 0);
+						next if ($alignments[3] < $alignmentLength); #skip if alignment shorter than alignmentLength
+						print TMPTBL join "\t", @alignments;
+						print TMPTBL "\n";
+						
+						my $seqXOne = 0;
+						my $seqXTwo = 0;
+						if($assemblySeqOrient->{$currentSeq} eq "+")
+						{
+							$seqXOne = $margin + ($assemblyCtgList[6] + $assemblySeqLeftEnd->{$currentSeq} + $alignments[6] - 1) / $pixelUnit;
+							$seqXTwo = $margin + ($assemblyCtgList[6] + $assemblySeqLeftEnd->{$currentSeq} + $alignments[7] - 1) / $pixelUnit;
+						}
+						else
+						{
+							$seqXOne = $margin + ($assemblyCtgList[6] + $assemblySeqRightEnd->{$currentSeq} - $alignments[6] + 1) / $pixelUnit;
+							$seqXTwo = $margin + ($assemblyCtgList[6] + $assemblySeqRightEnd->{$currentSeq} - $alignments[7] + 1) / $pixelUnit;
+						}
+						my $refXOne = $margin + ($alignments[8] - 1 ) / $pixelUnit;;
+						my $refXTwo = $margin + ($alignments[9] - 1 ) / $pixelUnit;
+
+						my $xv = [$seqXOne,$seqXTwo,$refXTwo,$refXOne];
+						my $yv = [$ctgBarY - 1,$ctgBarY - 1,$barY + $barHeight + $spaceForCompanion + 1,$barY + $barHeight + $spaceForCompanion + 1];
+						my $points = $assemblyChrSeqAlignment->get_path(
+							x=>$xv,
+							y=>$yv,
+							-type=>'polygon'
+						);
+						$assemblyChrSeqAlignment->polygon(
+							%$points,
+							id=>'aln'.$alignments[0].$alignments[1].$alignmentCount,
+							onclick => "closeDialog();openDialog('alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount')",
+							class=>'hasmenuForAlignment',
+							style=>{ stroke => 'red',
+								fill => 'yellow',
+								opacity => 0.5
+								},
+							'hide-url' => "assemblyAlignmentHide.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount&assemblyId=$assemblyId&chr=$chr&scrollLeft=$seqXOne",
+							'view-url' => "alignmentView.cgi?alignmentId=$alignments[0]-$alignments[1]-$alignmentCount"
+						);
+					}
+					close(TBL);
+					close(TMPTBL);
+				}
 			}
 			$preSeq = $currentSeq;
 			$hiddenSeqCount = 0;

@@ -23,8 +23,6 @@ $slogan = escapeHTML($slogan);
 my $keywords = $config->getFieldValueWithFieldName("KEYWORDS");
 $keywords = escapeHTML($keywords);
 
-
-
 # my $year1 = "2011";
 # my $month1 = "8";
 # my $day1 = "1";
@@ -41,6 +39,16 @@ $html =~ s/\$siteName/$siteName/g;
 $html =~ s/\$slogan/$slogan/g;
 $html =~ s/\$keywords/$keywords/g;
 
+## Data files will be saved to $commoncfg->{TMPDIR}
+unless (-e "$commoncfg->{DATADIR}")
+{
+	mkdir "$commoncfg->{DATADIR}";
+}
+## Temporary files will be saved to $commoncfg->{TMPDIR}
+unless (-e "$commoncfg->{TMPDIR}")
+{
+	mkdir "$commoncfg->{TMPDIR}";
+}
 
 my $update = 0;
 
