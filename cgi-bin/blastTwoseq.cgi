@@ -22,23 +22,6 @@ my $userName = $userDetail->{"userName"};
 
 my $commoncfg = readConfig("main.conf");
 my $userConfig = new userConfig;
-## alignments will be saved to $commoncfg->{DATADIR}/alignments
-unless (-e "$commoncfg->{DATADIR}/alignments")
-{
-	mkdir "$commoncfg->{DATADIR}/alignments";
-}
-unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq")
-{
-	mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq";
-}
-unless (-e "$commoncfg->{DATADIR}/alignments/seqToSet")
-{
-	mkdir "$commoncfg->{DATADIR}/alignments/seqToSet";
-}
-unless (-e "$commoncfg->{DATADIR}/alignments/setToSet")
-{
-	mkdir "$commoncfg->{DATADIR}/alignments/setToSet";
-}
 
 my $alignEngineList;
 $alignEngineList->{'blastn'} = "blast+/bin/blastn";

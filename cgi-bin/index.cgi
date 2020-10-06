@@ -44,6 +44,28 @@ unless (-e "$commoncfg->{DATADIR}")
 {
 	mkdir "$commoncfg->{DATADIR}";
 }
+## sequences will be saved to $commoncfg->{DATADIR}/sequences
+unless (-e "$commoncfg->{DATADIR}/sequences")
+{
+	mkdir "$commoncfg->{DATADIR}/sequences";
+}
+## alignments will be saved to $commoncfg->{DATADIR}/alignments
+unless (-e "$commoncfg->{DATADIR}/alignments")
+{
+	mkdir "$commoncfg->{DATADIR}/alignments";
+}
+unless (-e "$commoncfg->{DATADIR}/alignments/seqToSeq")
+{
+	mkdir "$commoncfg->{DATADIR}/alignments/seqToSeq";
+}
+unless (-e "$commoncfg->{DATADIR}/alignments/seqToSet")
+{
+	mkdir "$commoncfg->{DATADIR}/alignments/seqToSet";
+}
+unless (-e "$commoncfg->{DATADIR}/alignments/setToSet")
+{
+	mkdir "$commoncfg->{DATADIR}/alignments/setToSet";
+}
 ## Temporary files will be saved to $commoncfg->{TMPDIR}
 unless (-e "$commoncfg->{TMPDIR}")
 {
