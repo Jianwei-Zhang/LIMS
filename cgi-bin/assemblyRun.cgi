@@ -359,7 +359,7 @@ END
 								{
 									$subjectDir .= "/s". substr($eachFpcSeq,$position,2);
 								}
-								if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$getSequenceA[0]$preSeq-$eachFpcSeq.tbl")
+								if(-e "$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preSeq-$eachFpcSeq.tbl")
 								{
 									#5 merge two contigs;
 									my $assemblyPreCtg=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
@@ -932,7 +932,7 @@ END
 						{
 							my $goodEndFoundA = 0;
 							my $goodEndFoundB = 0;
-							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$eachSingletonCtgSeqA[5]-$eachSingletonCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$preCtgSeq[5]-$eachSingletonCtgSeqB[5].tbl";
+							open (TBL,"$commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$eachSingletonCtgSeqA[5]-$eachSingletonCtgSeqB[5].tbl") or die "can't open file: $commoncfg->{DATADIR}/alignments/seqToSeq$queryDir$subjectDir/$eachSingletonCtgSeqA[5]-$eachSingletonCtgSeqB[5].tbl";
 							while(<TBL>)
 							{
 								chop;
