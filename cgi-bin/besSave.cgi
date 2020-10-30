@@ -55,11 +55,11 @@ END
 		}
 		else
 		{
-			open (FILE, ">$infile");
+			open (BESFILE, ">$infile");
 			while (read ($besFile, my $Buffer, 1024)) {
-				print FILE $Buffer;
+				print BESFILE $Buffer;
 			}
-			close FILE;
+			close BESFILE;
 		}		
 		my $library=$dbh->prepare("SELECT * FROM matrix WHERE id = ?");
 		$library->execute($libraryId);

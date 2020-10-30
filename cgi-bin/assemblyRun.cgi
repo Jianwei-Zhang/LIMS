@@ -1726,6 +1726,7 @@ END
 
 					do{
 						my $dir = shift @dirs;
+						next unless (-e $dir);
 						opendir(DIR, $dir) or die "can't opendir $dir: $!";
 						my @files = readdir(DIR);
 						closedir DIR;
@@ -1885,6 +1886,7 @@ END
 
 						do{
 							my $dir = shift @dirs;
+							next unless (-e $dir);
 							opendir(DIR, $dir) or die "can't opendir $dir: $!";
 							my @files = readdir(DIR);
 							closedir DIR;

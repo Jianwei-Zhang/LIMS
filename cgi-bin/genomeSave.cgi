@@ -89,11 +89,11 @@ if($genomeName)
 
 				if($agpFile) # since agp file is relatively small, we upload it first
 				{
-					open (FILE, ">$agpInfile");
+					open (AGPFILE, ">$agpInfile");
 					while (read ($agpFile, my $agpBuffer, 1024)) {
-						print FILE $agpBuffer;
+						print AGPFILE $agpBuffer;
 					}
-					close FILE;
+					close AGPFILE;
 					my $agpDetails;
 					open(AGP, "<$agpInfile") or die "cannot open file $agpInfile";
 					{
@@ -148,11 +148,11 @@ END
 						}
 						else
 						{
-							open (FILE, ">$genomeInfile");
+							open (SEQFILE, ">$genomeInfile");
 							while (read ($genomeFile, my $Buffer, 1024)) {
-								print FILE $Buffer;
+								print SEQFILE $Buffer;
 							}
-							close FILE;
+							close SEQFILE;
 						}		
 						`perl -p -i -e 's/\r/\n/g' $genomeInfile`; #convert CR line terminators (MAC OS) into LF line terminators (Unix)
 
@@ -455,11 +455,11 @@ END
 					my $updateGenomeToRunning = $dbh->do("UPDATE matrix SET barcode = -1 WHERE id = $genomeId");			
 					if($agpFile) # since agp file is relatively small, we upload it first
 					{
-						open (FILE, ">$agpInfile");
+						open (AGPFILE, ">$agpInfile");
 						while (read ($agpFile, my $agpBuffer, 1024)) {
-							print FILE $agpBuffer;
+							print AGPFILE $agpBuffer;
 						}
-						close FILE;
+						close AGPFILE;
 						my $agpDetails;
 						open(AGP, "<$agpInfile") or die "cannot open file $agpInfile";
 						{
@@ -479,11 +479,11 @@ END
 					}
 					else
 					{
-						open (FILE, ">$genomeInfile");
+						open (SEQFILE, ">$genomeInfile");
 						while (read ($genomeFile, my $Buffer, 1024)) {
-							print FILE $Buffer;
+							print SEQFILE $Buffer;
 						}
-						close FILE;
+						close SEQFILE;
 					}		
 					`perl -p -i -e 's/\r/\n/g' $genomeInfile`; #convert CR line terminators (MAC OS) into LF line terminators (Unix)
 					#loading sequence
